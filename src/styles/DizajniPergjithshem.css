@@ -1,0 +1,186 @@
+/* Modern Global Theme-Aware Design System */
+
+body {
+  background-color: var(--sp-bg) !important;
+  color: var(--sp-text) !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Modernized Theme-Aware Containers - Fluid & Edge-Optimized */
+.containerDashboardP {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0.5rem auto 1.5rem auto !important;
+  background: transparent !important;
+  padding: 0.5rem 1.25rem !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+@media (max-width: 768px) {
+  .containerDashboardP {
+    padding: 0.5rem !important;
+    margin: 0 !important;
+  }
+}
+
+.title {
+  font-weight: 900;
+  color: var(--sp-text);
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.03em;
+  font-size: 1.5rem;
+}
+
+/* Legacy Table Layout Overrides - Ideally use Tabela.jsx component */
+.containerDashboardP table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 4px; 
+}
+
+.containerDashboardP tr th {
+  background-color: var(--sp-surface-2) !important;
+  color: var(--sp-text-muted) !important;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.65rem 0.85rem;
+  border: none !important;
+}
+
+.containerDashboardP tr td {
+  background: var(--sp-surface);
+  border-top: 1px solid var(--sp-border) !important;
+  border-bottom: 1px solid var(--sp-border) !important;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sp-text-soft);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.containerDashboardP tr td:first-child {
+  border-left: 1px solid var(--sp-border) !important;
+  border-radius: 8px 0 0 8px;
+}
+
+.containerDashboardP tr td:last-child {
+  border-right: 1px solid var(--sp-border) !important;
+  border-radius: 0 8px 8px 0;
+}
+
+.containerDashboardP tr:hover td {
+  background: var(--sp-row-hover) !important;
+  transform: scale(1.003);
+  color: var(--sp-text) !important;
+}
+
+/* Modern Filter Bars */
+.DataPerFiltrim {
+  display: flex !important;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.15rem;
+  background: var(--sp-surface-2);
+  border-radius: 12px;
+  border: 1px solid var(--sp-border);
+}
+
+/* Improved Form Controls */
+.form-control, .form-select {
+  background: var(--sp-input-bg) !important;
+  color: var(--sp-text) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--sp-border) !important;
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--sp-emerald) !important;
+  box-shadow: 0 0 0 3px var(--sp-emerald-glow) !important;
+}
+
+.form-control:disabled, .form-select:disabled {
+  background: var(--sp-surface-2) !important;
+  opacity: 0.6;
+}
+
+/* Premium Buttons */
+.btn {
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Keep Bootstrap's size modifiers working under the rule above */
+.btn-sm {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem !important;
+  border-radius: 6px !important;
+}
+
+.btn-lg {
+  font-size: 0.92rem;
+  padding: 0.55rem 1.15rem !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--sp-emerald) 0%, var(--sp-emerald-dk) 100%) !important;
+  border: none !important;
+  box-shadow: 0 8px 15px var(--sp-emerald-glow) !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 12px 20px var(--sp-emerald-glow) !important;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .containerDashboardP {
+    width: 100%;
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 0;
+  }
+
+  .DataPerFiltrim {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Only apply block-scroll to legacy containerDashboardP tables,
+     NOT to premium-table-container which has its own scroll wrapper */
+  .containerDashboardP > table,
+  .containerDashboardP > div > table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Global Premium Page Container (Matches Tabela.jsx's .tabela-premium-wrapper p-3) */
+.sp-page-container {
+  padding: 1rem !important;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .sp-page-container {
+    padding: 1rem 1.25rem 2rem 1.25rem !important;
+  }
+}

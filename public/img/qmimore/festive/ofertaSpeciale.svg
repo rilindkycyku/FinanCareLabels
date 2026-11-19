@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+  <!-- Ofertë speciale: yll shpërthimi me shenjën e përqindjes. -->
+  <path d="M150 10 L168 48 L208 30 L202 72 L244 78 L212 106 L240 138 L198 140 L200 182 L164 160 L150 196 L136 160 L100 182 L102 140 L60 138 L88 106 L56 78 L98 72 L92 30 L132 48 Z" fill="#e62429" stroke="#7f1d1d" stroke-width="3" stroke-linejoin="round"/>
+  <g fill="#ffec00" stroke="#1f2937" stroke-width="2.5">
+    <circle cx="128" cy="82" r="15"/>
+    <circle cx="172" cy="126" r="15"/>
+  </g>
+  <path d="M182 70 L118 138" stroke="#ffec00" stroke-width="12" stroke-linecap="round"/>
+  <path d="M182 70 L118 138" stroke="#1f2937" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>

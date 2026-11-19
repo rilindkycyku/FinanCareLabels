@@ -1,0 +1,474 @@
+/* FinanCare Labels: korniza e aplikacionit. Pjesa tjetër (ql-*, eq-*, btn-save, sp-modal) vjen nga stilet e FinanCare-s. */
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Regular.ttf") format("truetype");
+  font-weight: 400 500;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Bold.ttf") format("truetype");
+  font-weight: 600 900;
+}
+
+/* Ngjyrat e kornizës: e errët si parazgjedhje, e bardhë te :root.light-mode (vendoset nga ThemeContext-i i FinanCare-s). */
+:root {
+  --lb-koka-bg: rgba(15, 23, 42, 0.95);
+  --lb-kufi: rgba(148, 163, 184, 0.15);
+  --lb-hover-bg: rgba(148, 163, 184, 0.1);
+  --lb-accent: #38bdf8;
+  --lb-accent-bg: rgba(56, 189, 248, 0.18);
+  --lb-muted: #64748b;
+  --lb-kartela-bg: rgba(30, 41, 59, 0.6);
+  --lb-pdf-bg: #1e293b;
+}
+
+:root.light-mode {
+  --lb-koka-bg: rgba(255, 255, 255, 0.92);
+  --lb-kufi: rgba(15, 23, 42, 0.1);
+  --lb-hover-bg: rgba(15, 23, 42, 0.05);
+  --lb-accent: #0284c7;
+  --lb-accent-bg: rgba(2, 132, 199, 0.12);
+  --lb-muted: #64748b;
+  --lb-kartela-bg: #ffffff;
+  --lb-pdf-bg: #e2e8f0;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--sp-bg);
+  color: var(--sp-text);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.lb-koka {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 20px;
+  background: var(--lb-koka-bg);
+  border-bottom: 1px solid var(--lb-kufi);
+  backdrop-filter: blur(8px);
+}
+
+.lb-marka {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  color: var(--sp-text-strong);
+}
+
+.lb-marka svg {
+  color: var(--lb-accent);
+}
+
+.lb-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.lb-nav button {
+  border: 0;
+  background: transparent;
+  color: var(--sp-text-muted);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.lb-nav button:hover {
+  color: var(--sp-text-strong);
+  background: var(--lb-hover-bg);
+}
+
+.lb-nav button.aktiv {
+  color: var(--sp-text-strong);
+  background: var(--lb-accent-bg);
+}
+
+.lb-offline {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--lb-muted);
+}
+
+/* Butoni i temës: dielli (e errët) / hëna (e çelët) */
+.lb-tema-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--sp-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sp-text-muted);
+}
+
+.lb-tema-btn:hover {
+  color: var(--sp-text-strong);
+  background: var(--lb-hover-bg);
+}
+
+.lb-permbajtja {
+  padding: 20px;
+}
+
+.lb-excel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--lb-kartela-bg);
+  border: 1px solid var(--lb-kufi);
+}
+
+.lb-excel-emri {
+  flex: 1;
+  min-width: 0;
+}
+
+.lb-dizajnet {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.lb-lidhje {
+  text-transform: none;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-decoration: none;
+}
+
+.lb-cilesimet {
+  max-width: 640px;
+}
+
+.pdf-pamja {
+  max-height: 75vh;
+  overflow: auto;
+  background: var(--lb-pdf-bg);
+}
+
+/* Faqja A4 e plotë në ekran: e lartë sa dritarja (pa lëvizje për një faqe), faqet e tjera poshtë. */
+.pdf-pamja canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(78vh - 32px);
+  margin: 0 auto 16px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* Editori te tabela e produkteve */
+.lb-qeliza {
+  min-width: 60px;
+  padding: 2px 6px !important;
+  font-size: 0.82rem !important;
+}
+
+.sp-table tr.lb-ndryshuar > td:first-child {
+  box-shadow: inset 3px 0 0 var(--lb-accent);
+}
+
+/* Butonat dytësh (Mbyll, Anulo, Ruaj, Ndrysho...): gjithmonë jo të gjelbër, edhe kur tema e FinanCare-s
+   jep .btn-secondary/.btn-primary me !important. Veprimi kryesor mbetet .btn-save. */
+.btn.btn-cancel {
+  background: var(--sp-surface-2) !important;
+  border: 1px solid var(--sp-border) !important;
+  color: var(--sp-text-soft) !important;
+}
+.btn.btn-cancel:hover:not(:disabled),
+.btn.btn-cancel:focus-visible {
+  background: var(--sp-surface-3) !important;
+  border-color: var(--sp-text-muted) !important;
+  color: var(--sp-text) !important;
+}
+.btn.btn-cancel:disabled {
+  opacity: 0.6;
+  color: var(--sp-text-muted) !important;
+}
+
+/* Parapamja qëndron në vend kur lista është e gjatë (vetëm kur s'jemi në redaktim). */
+@media (min-width: 1200px) {
+  .lb-sticky {
+    position: sticky !important;
+    top: 84px;
+    align-self: flex-start;
+  }
+}
+
+/* Buton dytësh në gjendje aktive (p.sh. "Mbaro" kur jemi në redaktim): ngjyrë accent, jo e gjelbër. */
+.btn.btn-cancel.lb-aktiv,
+.btn.btn-cancel.lb-aktiv:hover:not(:disabled),
+.btn.btn-cancel.lb-aktiv:focus-visible {
+  background: var(--lb-accent-bg) !important;
+  border-color: var(--lb-accent) !important;
+  color: var(--lb-accent) !important;
+}
+
+/* ---------- Magjistari i printimit (si Migratori / Konfigurimi i FinanCare-s), me tokenët e temës ---------- */
+.lb-wizard {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  height: calc(100vh - 116px);
+  min-height: 560px;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-lg);
+  overflow: hidden;
+  background: var(--sp-bg);
+}
+
+.lb-wizard-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 12px 16px;
+  background: var(--sp-surface);
+  border-right: 1px solid var(--sp-border);
+  overflow: auto;
+}
+
+.lb-rail-titulli {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.lb-rail-ikona {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--sp-emerald) 14%, transparent);
+  color: var(--sp-emerald);
+}
+
+.lb-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--sp-emerald);
+}
+
+.lb-rail-h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sp-text);
+}
+
+.lb-stepper {
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sp-text-muted);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+/* vija që lidh hapat */
+.lb-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: calc(50% + 17px);
+  height: calc(100% - 34px);
+  width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--sp-text-muted) 35%, transparent);
+}
+
+.lb-step.done:not(:last-child)::after {
+  background: var(--sp-emerald);
+}
+
+.lb-step .n {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1.5px solid color-mix(in srgb, var(--sp-text-muted) 45%, transparent);
+  background: var(--sp-surface);
+}
+
+.lb-step .txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.lb-step .txt b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.lb-step .txt span {
+  font-size: 12px;
+  color: var(--sp-text-muted);
+}
+
+.lb-step.done {
+  color: var(--sp-text-soft);
+}
+
+.lb-step:not(:disabled) {
+  cursor: pointer;
+}
+
+.lb-step:not(:disabled):not(.on):hover {
+  background: var(--sp-overlay);
+}
+
+.lb-step.done .n {
+  background: var(--sp-emerald);
+  border-color: var(--sp-emerald);
+  color: #fff;
+}
+
+.lb-step.on {
+  color: var(--sp-text);
+  background: color-mix(in srgb, var(--sp-emerald) 12%, transparent);
+}
+
+.lb-step.on .n {
+  border-color: var(--sp-emerald);
+  color: var(--sp-emerald);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sp-emerald) 18%, transparent);
+}
+
+.lb-rail-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid var(--sp-border);
+  background: var(--sp-surface-2);
+  font-size: 13px;
+  color: var(--sp-text);
+}
+
+.lb-rail-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sp-text-muted);
+}
+
+.lb-wizard-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.lb-wizard-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 24px 28px;
+}
+
+.lb-wizard-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--sp-border);
+  background: var(--sp-surface);
+}
+
+/* Përmbledhja te hapi i fundit */
+.lb-permbledhja {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+}
+
+.lb-permbledhja dt {
+  font-weight: 600;
+  color: var(--sp-text-muted);
+}
+
+.lb-permbledhja dd {
+  margin: 0;
+  color: var(--sp-text);
+}
+
+/* Faqja e printimit zë gjithë dritaren: tabela lëviz brenda hapit, jo faqja. */
+.lb-wizard .sp-table-container {
+  max-height: calc(100vh - 430px) !important;
+}
+
+@media (max-width: 991px) {
+  .lb-wizard {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .lb-wizard-rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--sp-border);
+  }
+  .lb-stepper {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .lb-step:not(:last-child)::after {
+    display: none;
+  }
+}
+
+/* Prek për ta ndryshuar: qelizat e tabelës tregojnë që klikohen */
+.lb-prek {
+  cursor: text;
+}
+.lb-prek:hover:not(:has(input, select)) {
+  background: var(--sp-overlay);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--sp-emerald) 55%, transparent);
+}
+.lb-bosh {
+  color: var(--sp-text-muted);
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.75;
+}

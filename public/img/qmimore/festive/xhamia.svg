@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+  <!-- Xhamia: kubeja, dy minare, hëna me yllin. Silueta e plotë - del mirë edhe bardhë e zi. -->
+  <g fill="#14532d" stroke="#0b2e1a" stroke-width="2" stroke-linejoin="round">
+    <rect x="40" y="70" width="18" height="115"/>
+    <path d="M40 70 L49 42 L58 70 Z"/>
+    <rect x="36" y="96" width="26" height="6"/>
+    <rect x="242" y="70" width="18" height="115"/>
+    <path d="M242 70 L251 42 L260 70 Z"/>
+    <rect x="238" y="96" width="26" height="6"/>
+    <path d="M80 185 V120 Q80 112 88 112 H212 Q220 112 220 120 V185 Z"/>
+    <path d="M98 112 Q98 58 150 50 Q202 58 202 112 Z"/>
+    <rect x="146" y="30" width="8" height="22"/>
+  </g>
+  <g fill="#f8fafc" stroke="#0b2e1a" stroke-width="1.5">
+    <path d="M132 185 V150 Q132 134 150 134 Q168 134 168 150 V185 Z"/>
+    <path d="M96 150 V136 Q96 128 104 128 Q112 128 112 136 V150 Z"/>
+    <path d="M188 150 V136 Q188 128 196 128 Q204 128 204 136 V150 Z"/>
+  </g>
+  <path d="M158 6 A16 16 0 1 0 158 34 A12.5 12.5 0 1 1 158 6 Z" fill="#d4a017" stroke="#7a5c00" stroke-width="1.5"/>
+  <rect x="20" y="184" width="260" height="6" fill="#0b2e1a"/>
+</svg>

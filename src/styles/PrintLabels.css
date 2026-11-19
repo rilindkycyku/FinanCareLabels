@@ -1,0 +1,238 @@
+/* Modali i çmimores: zgjedhja e dizajnit/madhësisë majtas, parapamja e etiketës djathtas. */
+
+.ql-seksioni {
+  margin-bottom: 1rem;
+}
+
+.ql-titulli-seksionit {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sp-text-muted);
+  margin-bottom: 0.45rem;
+}
+
+.ql-dizajnet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.ql-zgjedhja {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  border-radius: 10px;
+  color: var(--sp-text);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ql-zgjedhja:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.ql-zgjedhja.aktiv {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: var(--sp-emerald);
+}
+
+.ql-zgjedhja-emri {
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.ql-zgjedhja-pershkrimi {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: var(--sp-text-muted);
+}
+
+.ql-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ql-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sp-text);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+}
+
+.ql-chip small {
+  font-weight: 500;
+  color: var(--sp-text-muted);
+}
+
+.ql-chip.aktiv {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: var(--sp-emerald);
+}
+
+.ql-chip--vogel {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.66rem;
+}
+
+/* Skica e vogël e dizajnit te kartela e zgjedhjes */
+.ql-skica {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.45);
+}
+
+.ql-skica--gjere {
+  width: 42px;
+  height: 28px;
+}
+
+.ql-skica span {
+  position: absolute;
+  display: block;
+}
+
+.ql-s-koka {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 22%;
+  background: #ffd966;
+  border-bottom: 1px solid #111;
+}
+
+.ql-s-emri {
+  height: 3px;
+  border-radius: 1px;
+  background: #334155;
+}
+
+.ql-s-qmimi {
+  font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #000;
+}
+
+.ql-s-vjeter {
+  font-family: Arial, sans-serif;
+  font-weight: 800;
+  font-size: 7px;
+  line-height: 1;
+  color: #000;
+}
+
+.ql-s-vjeter::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 50%;
+  height: 1.5px;
+  background: #e62429;
+  transform: rotate(-20deg);
+}
+
+.ql-s-vula {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e62429;
+}
+
+.ql-s-shigjeta {
+  width: 15px;
+  height: 8px;
+  background: #e62429;
+  clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%);
+}
+
+.ql-s-barkodi {
+  background: repeating-linear-gradient(90deg, #000 0 1px, #fff 1px 2px, #000 2px 2.5px, #fff 2.5px 3.5px);
+}
+
+.ql-s-flamuri {
+  width: 7px;
+  height: 5px;
+  background: #244aa5;
+}
+
+.ql-s-flamuri-madh {
+  width: 14px;
+  height: 9px;
+  background: #244aa5;
+  border-radius: 1px;
+}
+
+.ql-s-vija {
+  height: 1px;
+  background: #111;
+}
+
+/* Parapamja */
+.ql-parapamja {
+  position: sticky;
+  top: 0;
+  border-radius: 12px;
+  border: 1px solid var(--sp-border);
+  background: var(--sp-surface-3, #1e2d45);
+  padding: 0.85rem;
+}
+
+.ql-parapamja-kanvasi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+}
+
+.ql-parapamja-faqe {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 360px;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
+
+.ql-parapamja-info {
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  color: var(--sp-text-muted);
+  text-align: center;
+}
+
+.ql-shenim {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--sp-text);
+  margin-bottom: 0.5rem;
+}
+
+.ql-shenim--info {
+  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(6, 182, 212, 0.08);
+}

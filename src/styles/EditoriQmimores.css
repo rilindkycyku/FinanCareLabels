@@ -1,0 +1,454 @@
+/* Editori i shablloneve të çmimores: lista majtas, skena në mes, vetitë djathtas. */
+
+.eq-faqja {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 310px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.eq-lista,
+.eq-paneli,
+.eq-qendra,
+.eq-bosh {
+  background: var(--sp-surface);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-lg);
+  padding: 0.85rem;
+  color: var(--sp-text);
+}
+
+.eq-bosh {
+  grid-column: 2 / -1;
+  padding: 4rem 1.5rem;
+  text-align: center;
+  color: var(--sp-text-muted);
+}
+
+.eq-lista-titulli,
+.eq-paneli-titulli {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sp-text-muted);
+  margin-bottom: 0.45rem;
+}
+
+.eq-paneli-titulli {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.eq-ndihme {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--sp-text-muted);
+  margin: 0.35rem 0 0.6rem;
+}
+
+/* Rreshtat e listës së shablloneve */
+.eq-rreshti {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  margin-bottom: 4px;
+  border-radius: var(--sp-radius-md);
+  border: 1px solid var(--sp-border);
+  background: var(--sp-surface-2);
+  overflow: hidden;
+}
+
+.eq-rreshti.aktiv {
+  border-color: var(--sp-emerald);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.eq-rreshti button {
+  border: 0;
+  background: transparent;
+  color: var(--sp-text-muted);
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.eq-rreshti button:hover {
+  color: var(--sp-text-strong);
+  background: var(--sp-overlay);
+}
+
+.eq-rreshti .eq-rreshti-emri {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-weight: 700;
+  color: var(--sp-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eq-rreshti-emri small {
+  display: block;
+  font-weight: 500;
+  font-size: 0.66rem;
+  line-height: 1.25;
+  color: var(--sp-text-muted);
+}
+
+.eq-rrezik:hover {
+  color: var(--sp-red) !important;
+}
+
+/* Shiritat sipër skenës */
+.eq-shiriti {
+  margin-bottom: 0.6rem;
+}
+
+.eq-shiriti--mjetet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.eq-shto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.eq-shto button,
+.eq-mjet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--sp-text);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+}
+
+.eq-shto button:hover,
+.eq-mjet:hover:not(:disabled) {
+  border-color: var(--sp-emerald);
+}
+
+.eq-mjet:disabled {
+  opacity: 0.4;
+}
+
+/* Skena: etiketa e bardhë mbi sfond me katrorë */
+.eq-skena-mbajtesi {
+  overflow: auto;
+  max-height: calc(100vh - 300px);
+  min-height: 320px;
+  padding: 24px;
+  border-radius: var(--sp-radius-md);
+  background-color: var(--sp-surface-2);
+  background-image: linear-gradient(45deg, var(--sp-overlay) 25%, transparent 25%, transparent 75%, var(--sp-overlay) 75%),
+    linear-gradient(45deg, var(--sp-overlay) 25%, transparent 25%, transparent 75%, var(--sp-overlay) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  outline: none;
+  display: flex;
+}
+
+.eq-skena {
+  position: relative;
+  flex-shrink: 0;
+  margin: auto;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.45), 0 10px 30px rgba(0, 0, 0, 0.35);
+  touch-action: none;
+  user-select: none;
+}
+
+.eq-skena canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.eq-element {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed transparent;
+  cursor: move;
+}
+
+.eq-element:hover {
+  border-color: rgba(6, 182, 212, 0.8);
+}
+
+.eq-element.zgjedhur {
+  border: 1px solid #10b981;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35);
+  z-index: 5;
+}
+
+.eq-element-shenim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.eq-doreza {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  border: 1.5px solid #10b981;
+  border-radius: 2px;
+}
+
+.eq-doreza--nw { left: -5px; top: -5px; cursor: nwse-resize; }
+.eq-doreza--n { left: calc(50% - 4.5px); top: -5px; cursor: ns-resize; }
+.eq-doreza--ne { right: -5px; top: -5px; cursor: nesw-resize; }
+.eq-doreza--e { right: -5px; top: calc(50% - 4.5px); cursor: ew-resize; }
+.eq-doreza--se { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.eq-doreza--s { left: calc(50% - 4.5px); bottom: -5px; cursor: ns-resize; }
+.eq-doreza--sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
+.eq-doreza--w { left: -5px; top: calc(50% - 4.5px); cursor: ew-resize; }
+
+/* Paneli i vetive */
+.eq-paneli {
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+.eq-veprimet-kryesore {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.eq-paruajtur {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--sp-amber);
+  margin-bottom: 0.6rem;
+}
+
+.eq-veprimet {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.eq-veprimet button {
+  border: 0;
+  background: transparent;
+  color: var(--sp-text-muted);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--sp-radius-sm);
+}
+
+.eq-veprimet button:hover:not(:disabled) {
+  color: var(--sp-text-strong);
+  background: var(--sp-overlay);
+}
+
+.eq-veprimet button:disabled {
+  opacity: 0.35;
+}
+
+.eq-rrjeta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.eq-fusha {
+  margin-bottom: 0.55rem;
+  min-width: 0;
+}
+
+.eq-fusha label {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--sp-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.eq-ngjyra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 31px;
+}
+
+.eq-ngjyra input[type="color"] {
+  width: 38px;
+  height: 28px;
+  padding: 1px;
+  border-radius: var(--sp-radius-sm);
+  border: 1px solid var(--sp-border);
+  background: var(--sp-input-bg);
+}
+
+.eq-ngjyra input[type="color"]:disabled {
+  opacity: 0.35;
+}
+
+.eq-kutite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.9rem;
+  font-size: 0.78rem;
+  margin-bottom: 0.55rem;
+}
+
+.eq-kutite .form-check {
+  margin-bottom: 0;
+}
+
+.eq-fushat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0.2rem;
+}
+
+.eq-fushat button {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--sp-text-soft);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+}
+
+.eq-fushat button:hover,
+.eq-fushat button.aktiv {
+  border-color: var(--sp-emerald);
+  color: var(--sp-text-strong);
+}
+
+.eq-shtresa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 3px;
+  text-align: left;
+  font-size: 0.74rem;
+  color: var(--sp-text);
+  background: var(--sp-surface-2);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius-sm);
+}
+
+.eq-shtresa span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.eq-shtresa.aktiv {
+  border-color: var(--sp-emerald);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+@media (max-width: 1199px) {
+  .eq-faqja {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .eq-paneli {
+    grid-column: 1 / -1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .eq-faqja {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eq-bosh {
+    grid-column: 1;
+  }
+}
+
+/* Tab-et e shablloneve të gatshme (sipas kategorisë) */
+.eq-tabet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.eq-tabet button {
+  padding: 3px 9px;
+  border: 1px solid var(--sp-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--sp-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.eq-tabet button.aktiv {
+  border-color: var(--sp-emerald);
+  background: var(--sp-emerald-glow);
+  color: var(--sp-emerald);
+}
+
+/* Nënkategoritë (p.sh. Festive → Fetare / Kombëtare): më të vogla dhe të futura brenda. */
+.eq-tabet--nen {
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--sp-border);
+}
+
+.eq-tabet--nen button {
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  border-style: dashed;
+}
+
+.eq-tabet--nen button.aktiv {
+  border-style: solid;
+}
+
+/* Galeria e imazheve të FinanCare-s te vetitë e elementit "Imazh". */
+.eq-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.eq-galeria-imazhi {
+  aspect-ratio: 1;
+  padding: 4px;
+  border: 1px solid var(--sp-border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eq-galeria-imazhi img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.eq-galeria-imazhi:hover,
+.eq-galeria-imazhi.aktiv {
+  border-color: var(--sp-emerald);
+  box-shadow: 0 0 0 2px var(--sp-emerald);
+}
