@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld('labels', {
   hapExcel: (skedari) => ipcRenderer.invoke('excel:hap', skedari),
   ruajPdf: (bajtet, emri) => ipcRenderer.invoke('pdf:ruaj', bajtet, emri),
   hapPdf: (bajtet, emri) => ipcRenderer.invoke('pdf:hap', bajtet, emri),
-  printoPdf: (faqet, gjeresiaMm, lartesiaMm) => ipcRenderer.invoke('pdf:printo', faqet, gjeresiaMm, lartesiaMm)
+  printerat: () => ipcRenderer.invoke('printerat:lista'),
+  // Shiriti i titullit i vizatuar nga faqja: ngjyrat e butonave të Windows-it sipas temës.
+  titlebar: { tema: (tema) => ipcRenderer.invoke('titlebar:tema', tema) },
+  printoPdf: (faqet, gjeresiaMm, lartesiaMm, opsionet) => ipcRenderer.invoke('pdf:printo', faqet, gjeresiaMm, lartesiaMm, opsionet)
 })

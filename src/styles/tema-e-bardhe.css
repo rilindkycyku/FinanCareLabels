@@ -2,6 +2,7 @@
 
 /* Toast-et kanë sfond të gjelbër/të kuq: teksti "text-white" duhet të mbetet i bardhë,
    jo i zi si te .text-white i temës së çelët. */
+body.light-mode .toast .text-white,
 .toast .text-white {
   color: #fff !important;
 }

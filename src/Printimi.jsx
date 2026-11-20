@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Col, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faArrowRight, faArrowsRotate, faCheck, faClockRotateLeft, faDownload, faFileExcel, faFilePdf, faFolderOpen, faPen, faPenToSquare, faPlus, faRotateLeft, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faArrowsRotate, faCheck, faClockRotateLeft, faEraser, faDownload, faFileExcel, faFilePdf, faFolderOpen, faPen, faPenToSquare, faPlus, faRotateLeft, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import PdfPamja, { PdfKanvasi } from "./components/PdfPamja";
 import { lexoExcelin, meNdryshime, shablloniISugjeruar } from "./lib/excel";
 import { opsionetEOrigjines } from "./lib/qmimore/origjina";
@@ -10,7 +10,7 @@ import { dataShqip, gjurmetEPunes, indeksoHistorikun, lexoHistorikun, regjistroP
 import { normalizoShabllonin, pergatitImazhet, pershkrimiLetres, rrjetaEShabllonit, shablloniKaZbritje, shablloniTermik } from "./lib/qmimore/shablloniQmimores";
 import { KATEGORITE_E_SHABLLONEVE, SHABLLONET_E_GATSHME, nenkategoriteE } from "./lib/qmimore/shabllonetEGatshme";
 import { emriShtetit, flamuriSiDataUrl, flamuriSiPng, ngarkoFlamujt } from "./lib/qmimore/origjina";
-import { ngarkoFontetEQmimores, planiFletes, vizatoQmimoren } from "./lib/qmimore/qmimorjaPdf";
+import { fletaEParazgjedhur, ngarkoFontetEQmimores, planiFletes, vizatoQmimoren } from "./lib/qmimore/qmimorjaPdf";
 
 const TE_MIAT = "temiat";
 
@@ -71,7 +71,8 @@ const TE_MIAT_PRODUKTET = "Produktet e mia";
 const HAPESIRAT = [0, 0.8, 1, 2, 3, 5];
 const MAKS_KOPJE = 99;
 // Marginat e fletës (mm nga skaji); 0 = deri në skaj, si te tagsprinter.com.
-const MARGJINAT = [0, 2, 5, 10];
+// Margjina minimale nga skaji (mm); rrjeta vihet në mes, ndaj margjina reale del shpesh më e madhe.
+const MARGJINAT = [0, 1, 2, 3, 4, 5];
 // Hapat e magjistarit të printimit: [emri, përshkrimi].
 const HAPAT = [
   ["Produktet", "Excel-i, fleta dhe kopjet"],
@@ -184,7 +185,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const ndryshimetEFletes = ndryshimet[fletaAktive] || BOSH;
   const teShtuaratEFletes = teShtuarat[fletaAktive] || LISTE_BOSH;
   const produktetEFletes = useMemo(() => {
-    const ngaExceli = (fleta?.produktet || []).map((p) => meNdryshime(p, ndryshimetEFletes[p.nr]));
+    // Rreshtat e Excel-it të fshirë këtu ({ fshire: true }) s'shfaqen; rikthehen me "Rikthe si në Excel".
+    const ngaExceli = (fleta?.produktet || []).filter((p) => !ndryshimetEFletes[p.nr]?.fshire).map((p) => meNdryshime(p, ndryshimetEFletes[p.nr]));
     const shtuar = teShtuaratEFletes.map((nr) => meNdryshime({ nr, iShtuar: true, name: "", code: "", barcode: "", price: null }, ndryshimetEFletes[nr] || {}));
     return [...ngaExceli, ...shtuar];
   }, [fleta, ndryshimetEFletes, teShtuaratEFletes]);
@@ -224,6 +226,30 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       const { [nr]: _hequr, ...tjera } = t[fletaAktive] || {};
       return { ...t, [fletaAktive]: tjera };
     });
+  // Fshirja e produktit nga lista (i shtuari fshihet krejt, rreshti i Excel-it shënohet { fshire: true } - Excel-i
+  // s'preket) dhe rikthimi si në Excel - në të dyja pamjet e tabelës (edhe pa "Ndrysho").
+  const fshiProduktin = (p) =>
+    p.iShtuar
+      ? fshijTeShtuarin(p.nr)
+      : setNdryshimet((t) => ({ ...t, [fletaAktive]: { ...(t[fletaAktive] || {}), [p.nr]: { fshire: true } } }));
+  const veprimetERreshtit = (p) => (
+    <span className="d-inline-flex gap-2">
+      {!p.iShtuar && ndryshimetEFletes[p.nr] && (
+        <button type="button" className="btn btn-link p-0 text-info" title="Rikthe si në Excel" aria-label="Rikthe si në Excel" onClick={() => riktheNgaExceli(p.nr)}>
+          <FontAwesomeIcon icon={faRotateLeft} />
+        </button>
+      )}
+      <button
+        type="button"
+        className="btn btn-link p-0 text-danger"
+        title={p.iShtuar ? "Fshije këtë produkt të shtuar" : "Fshije nga lista (Excel-i s'preket; rikthehet me \"Rikthe si në Excel\")"}
+        aria-label="Fshije produktin"
+        onClick={() => fshiProduktin(p)}
+      >
+        <FontAwesomeIcon icon={faTrash} />
+      </button>
+    </span>
+  );
   const hiqTeGjithaNdryshimet = () => {
     setNdryshimet((t) => ({ ...t, [fletaAktive]: {} }));
     setTeShtuarat((t) => ({ ...t, [fletaAktive]: [] }));
@@ -324,6 +350,24 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       return { ...t, [fletaAktive]: s };
     });
 
+  // Pastro: si në fillim, pa Excel - mbyllet skedari (s'kujtohet më), fshihen produktet e shtuara këtu (edhe
+  // "Produktet e mia"), ndryshimet, kopjet dhe zgjedhjet. Skedari i Excel-it në disk s'preket.
+  const [pastrimi, setPastrimi] = useState(false);
+  const kaShtuaraOseNdryshime =
+    Object.values(teShtuarat).some((l) => l?.length) || Object.values(ndryshimet).some((n) => n && Object.keys(n).length);
+  const pastroGjithcka = () => {
+    setPastrimi(false);
+    ndryshoCilesimet({ skedariExcel: "" });
+    setExcel(null);
+    setGabimiExcel("");
+    setTeShtuarat({});
+    setNdryshimet({});
+    setKopjet({});
+    setTeHequrat({});
+    setKerkimi("");
+    setRedaktim(false);
+  };
+
   /* ---------- Shabllonet ---------- */
 
   useEffect(() => {
@@ -362,6 +406,18 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     return shabllonet[s] ? s : Object.keys(shabllonet)[0];
   }, [cilesimet.shabllonetSipasFletes, fletaAktive, shabllonet, tabet]);
 
+  // Rregullimet e fletës (hapësirat, margjina, orientimi) ruhen për çdo shabllon: parazgjedhja e shabllonit
+  // (fletaEParazgjedhur - sa më shumë etiketa në A4) + ndryshimet e përdoruesit te fletaSipasShabllonit.
+  const ndryshimetERregullimit = cilesimet.fletaSipasShabllonit?.[celesiAktiv] || null;
+  const ndryshoRregullimin = (n) =>
+    ndryshoCilesimet({
+      fletaSipasShabllonit: { ...(cilesimet.fletaSipasShabllonit || {}), [celesiAktiv]: { ...(ndryshimetERregullimit || {}), ...n } },
+    });
+  const riktheRregullimin = () => {
+    const { [celesiAktiv]: _hiqet, ...tjerat } = cilesimet.fletaSipasShabllonit || {};
+    ndryshoCilesimet({ fletaSipasShabllonit: tjerat });
+  };
+
   const zgjidhShabllonin = (celesi) =>
     ndryshoCilesimet({ shabllonetSipasFletes: { ...(cilesimet.shabllonetSipasFletes || {}), [fletaAktive]: celesi } });
 
@@ -387,7 +443,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const meZbritje = shablloniAktiv ? shablloniKaZbritje(shablloniAktiv) : false;
   const formati = shablloniAktiv ? rrjetaEShabllonit(shablloniAktiv) : { kolonat: 1, rreshtat: 1 };
   // Plani i fletës sipas orientimit dhe hapësirave të zgjedhura (numri i etiketave për fletë del nga ai).
-  const plani = shablloniAktiv ? planiFletes(shablloniAktiv, cilesimet.orientimi || "auto", Number(cilesimet.hapesiraH) || 0, Number(cilesimet.hapesiraV) || 0, Number(cilesimet.margjina) || 0) : null;
+  const rregullimi = { ...fletaEParazgjedhur(shablloniAktiv), ...(ndryshimetERregullimit || {}) };
+  const plani = shablloniAktiv ? planiFletes(shablloniAktiv, rregullimi.orientimi || "auto", Number(rregullimi.hapesiraH) || 0, Number(rregullimi.hapesiraV) || 0, Number(rregullimi.margjina) || 0) : null;
   const perFaqe = plani ? plani.perFaqe : formati.kolonat * formati.rreshtat;
   const numriMeZbritje = produktet.filter((p) => p.discount > 0).length;
 
@@ -417,12 +474,12 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       fontet,
       shablloni: shablloniGati || shablloniAktiv,
       emriBiznesit: cilesimet.emriBiznesit || "",
-      hapesiraH: Number(cilesimet.hapesiraH) || 0,
-      hapesiraV: Number(cilesimet.hapesiraV) || 0,
-      orientimi: cilesimet.orientimi || "auto",
-      margjina: Number(cilesimet.margjina) || 0,
+      hapesiraH: Number(rregullimi.hapesiraH) || 0,
+      hapesiraV: Number(rregullimi.hapesiraV) || 0,
+      orientimi: rregullimi.orientimi || "auto",
+      margjina: Number(rregullimi.margjina) || 0,
     }),
-    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.stiliQmimit, cilesimet.emriBiznesit, cilesimet.hapesiraH, cilesimet.hapesiraV, cilesimet.orientimi, cilesimet.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
+    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
   );
 
   /* ---------- Historiku i printimeve: e njëjta çmimore s'printohet dy herë pa e ditur ---------- */
@@ -604,6 +661,12 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
           <FontAwesomeIcon icon={faDownload} className="me-2" />
           Me shembuj
         </a>
+        {(skedari || kaShtuaraOseNdryshime) && (
+          <Button variant="secondary" size="sm" className="btn-cancel text-nowrap" title="Mbyll Excel-in dhe fshi produktet e shtuara e ndryshimet - si në fillim (skedari në disk s'preket)" onClick={() => setPastrimi(true)}>
+            <FontAwesomeIcon icon={faEraser} className="me-2" />
+            Pastro
+          </Button>
+        )}
         {skedari && (
           <>
             <Button variant="secondary" size="sm" className="btn-cancel" title="Rilexo (pasi e keni ruajtur në Excel)" onClick={() => lexoSkedarin(skedari)}>
@@ -694,13 +757,13 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                         <th className="text-end">Çmimi</th>
                         <th className="text-end">Zbritja</th>
                         <th className="text-end">Çmimi i ri</th>
-                        {redaktim && <th style={{ width: 36 }} />}
+                        <th style={{ width: 52 }} />
                       </tr>
                     </thead>
                     <tbody>
                       {teDukshmit.length === 0 ? (
                         <tr>
-                          <td colSpan={redaktim ? 11 : 10} className="text-center text-white-50 py-4">
+                          <td colSpan={11} className="text-center text-white-50 py-4">
                             {fleta?.eMia ? 'Shtoni produkte direkt me "Shto produkt" - ruhen në program, pa Excel.' : "Fleta nuk ka produkte."}
                           </td>
                         </tr>
@@ -732,16 +795,16 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                                   <Qeliza gjeresia={70} vlera={fusha(p, "code", p.code)} onNdrysho={(v) => ndryshoFushen(p, "code", v)} />
                                 </td>
                                 <td>
-                                  <Qeliza gjeresia={240} vlera={fusha(p, "name", p.name)} placeholder="Emri i produktit" maxLength={120} onNdrysho={(v) => ndryshoFushen(p, "name", v)} />
+                                  <Qeliza gjeresia={210} vlera={fusha(p, "name", p.name)} placeholder="Emri i produktit" maxLength={120} onNdrysho={(v) => ndryshoFushen(p, "name", v)} />
                                 </td>
                                 <td>
-                                  <Qeliza gjeresia={150} vlera={fusha(p, "barcode", p.barcode)} maxLength={30} onNdrysho={(v) => ndryshoFushen(p, "barcode", v)} />
+                                  <Qeliza gjeresia={135} vlera={fusha(p, "barcode", p.barcode)} maxLength={30} onNdrysho={(v) => ndryshoFushen(p, "barcode", v)} />
                                 </td>
                                 <td>
                                   <Form.Select
                                     size="sm"
                                     className="lb-qeliza"
-                                    style={{ width: 150 }}
+                                    style={{ width: 140 }}
                                     title="Automatike = nga prefiksi i barkodit"
                                     value={fusha(p, "origjina", p.origjinaMeDore ? p.origin : "")}
                                     onChange={(e) => ndryshoFushen(p, "origjina", e.target.value)}
@@ -773,19 +836,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                                     onNdrysho={(v) => ndryshoFushen(p, "qmimiRi", v)}
                                   />
                                 </td>
-                                <td>
-                                  {p.iShtuar ? (
-                                    <button type="button" className="btn btn-link p-0 text-danger" title="Hiq produktin e shtuar" onClick={() => fshijTeShtuarin(p.nr)}>
-                                      <FontAwesomeIcon icon={faTrash} />
-                                    </button>
-                                  ) : (
-                                    ndryshimetEFletes[p.nr] && (
-                                      <button type="button" className="btn btn-link p-0 text-info" title="Rikthe si në Excel" onClick={() => riktheNgaExceli(p.nr)}>
-                                        <FontAwesomeIcon icon={faRotateLeft} />
-                                      </button>
-                                    )
-                                  )}
-                                </td>
+                                <td>{veprimetERreshtit(p)}</td>
                               </>
                             ) : (
                               <>
@@ -837,6 +888,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                               p.discount > 0 ? <span className="text-success fw-bold">{euro(p.qmimiPasZbritjes)}</span> : <span className="lb-bosh">+ zbritje</span>,
                               { numer: true, gjeresia: 90, klasa: "text-end", tdKlasa: "text-end text-nowrap" }
                             )}
+                            <td>{veprimetERreshtit(p)}</td>
                               </>
                             )}
                           </tr>
@@ -945,11 +997,19 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                   {!formati.veqmas && (
                     <div className="d-flex align-items-center gap-2 mt-2">
                       <span className="small text-white-50">Orientimi i fletës:</span>
-                      <Form.Select size="sm" style={{ width: "auto" }} value={cilesimet.orientimi || "auto"} onChange={(e) => ndryshoCilesimet({ orientimi: e.target.value })}>
+                      <Form.Select size="sm" style={{ width: "auto" }} value={rregullimi.orientimi || "auto"} onChange={(e) => ndryshoRregullimin({ orientimi: e.target.value })}>
                         <option value="auto">Automatik (më shumë etiketa)</option>
                         <option value="portret">Portret</option>
                         <option value="peisazh">Peisazh</option>
                       </Form.Select>
+                      {/* Rregullimet e fletës ruhen për këtë shabllon; pa ndryshime vlen parazgjedhja e tij. */}
+                      {ndryshimetERregullimit ? (
+                        <button type="button" className="ql-chip ql-chip--vogel" title="Hapësirat, margjina dhe orientimi të parazgjedhura për këtë shabllon (sa më shumë etiketa në A4)" onClick={riktheRregullimin}>
+                          Rikthe parazgjedhjen e shabllonit
+                        </button>
+                      ) : (
+                        <span className="small text-white-50">parazgjedhja e shabllonit</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -961,7 +1021,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     {[
                       ["hapesiraH", "Hapësira horizontale", "mes kolonave"],
                       ["hapesiraV", "Hapësira vertikale", "mes rreshtave"],
-                      ["margjina", "Marginat e fletës", "nga skaji i letrës", MARGJINAT],
+                      ["margjina", "Margjina minimale", "nga skaji i letrës", MARGJINAT],
                     ].map(([celesi, emri, shpjegimi, vlerat]) => (
                       <div key={celesi} className="d-flex align-items-center gap-2 mb-1 flex-wrap">
                         <span className="small text-white-50" style={{ minWidth: 150 }} title={shpjegimi}>
@@ -975,14 +1035,14 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                               title={
                                 celesi === "margjina"
                                   ? mm
-                                    ? `${mm} mm bosh ${shpjegimi} në çdo anë`
-                                    : "Etiketat deri në skaj të letrës (si te tagsprinter.com) - nxë më shumë, por disa printera s'printojnë 3-4 mm te skaji"
+                                    ? `Të paktën ${mm} mm ${shpjegimi} në çdo anë - zgjidhet orientimi me më shumë etiketa dhe rrjeta vihet në mes`
+                                    : "Etiketat mund të shkojnë deri në skaj të letrës - nxë më shumë, por shumica e printerave s'printojnë 3-4 mm te skaji"
                                   : mm
                                     ? `${mm} mm bosh ${shpjegimi} - çdo etiketë mbetet me përmasat e veta`
                                     : `Etiketat ngjitur ${shpjegimi}`
                               }
                               className={`ql-chip ql-chip--vogel${opsionet[celesi] === mm ? " aktiv" : ""}`}
-                              onClick={() => ndryshoCilesimet({ [celesi]: mm })}
+                              onClick={() => ndryshoRregullimin({ [celesi]: mm })}
                             >
                               {mm ? `${mm} mm` : celesi === "margjina" ? "Pa margjina" : "Pa hapësirë"}
                             </button>
@@ -1032,7 +1092,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                         <>
                           <dt>Hapësirat</dt>
                           <dd>
-                            {opsionet.hapesiraH} mm horizontale · {opsionet.hapesiraV} mm vertikale · margjina {opsionet.margjina} mm
+                            {opsionet.hapesiraH} mm horizontale · {opsionet.hapesiraV} mm vertikale · margjina min. {opsionet.margjina} mm
+                            {plani && ` (reale: ${plani.anash.toFixed(1)} mm anash, ${plani.lartPoshte.toFixed(1)} mm lart/poshtë)`}
                           </dd>
                         </>
                       )}
@@ -1089,6 +1150,31 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       </div>
 
       <PdfPamja pdf={pdf} titulli={`Çmimorja · ${fletaAktive}`} onHide={() => setPdf(null)} onMesazh={mesazh} onUKrye={regjistro} />
+
+      <Modal show={pastrimi} onHide={() => setPastrimi(false)} centered className="sp-modal">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FontAwesomeIcon icon={faEraser} className="me-2 text-warning" />
+            Të pastrohet gjithçka?
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="mb-2">
+            Aplikacioni kthehet si në fillim, pa Excel{skedari ? <> - mbyllet <strong>{skedari.split(/[\\/]/).pop()}</strong></> : ""}.
+            {kaShtuaraOseNdryshime && <> Produktet e shtuara këtu, ndryshimet dhe kopjet <strong>fshihen</strong>.</>}
+          </p>
+          <div className="text-white-50 small">Skedari i Excel-it në disk s'preket - e hapni përsëri kur të doni.</div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" className="btn-cancel px-4" onClick={() => setPastrimi(false)}>
+            Anulo
+          </Button>
+          <Button className="btn-save px-4" onClick={pastroGjithcka}>
+            <FontAwesomeIcon icon={faEraser} className="me-2" />
+            Pastro
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Modal show={Boolean(konfirmimi)} onHide={() => setKonfirmimi(null)} centered className="sp-modal">
         <Modal.Header closeButton>

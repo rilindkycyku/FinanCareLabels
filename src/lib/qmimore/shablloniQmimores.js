@@ -177,6 +177,7 @@ export const normalizoShabllonin = (burimi) => {
       return {
         ...LLOJET[el.lloji].fillestare,
         ...el,
+        ...(el.lloji === "imazh" ? { imazhi: adresaEVizatimit(el.imazhi) } : {}),
         id: typeof el.id === "string" && el.id ? el.id : idERe(),
         x: kufizo(numer(el.x, 0), 0, w - ew),
         y: kufizo(numer(el.y, 0), 0, h - eh),
@@ -342,7 +343,8 @@ const vizatoElementin = (m, el, p, g, x, y) => {
   const { w, h } = el;
   switch (el.lloji) {
     case "tekst": {
-      const teksti = zevendeso(el.teksti, g.vlerat);
+      // "Shfaq barkodin" fik edhe numrin e barkodit kur shablloni e ka si tekst ({barkodi}), jo vetëm vijat.
+      const teksti = zevendeso(el.teksti, m.shfaqBarkodin ? g.vlerat : { ...g.vlerat, barkodi: "" });
       if (!teksti) return;
       if (el.sfondi) {
         doc.setFillColor(...ngjyraRgb(el.sfondi));
@@ -523,6 +525,27 @@ const vizatoElementin = (m, el, p, g, x, y) => {
 // jsPDF s'vizaton SVG, prandaj para vizatimit çdo imazh me adresë kthehet në PNG (data URL) me
 // pergatitImazhet(). Raporti (w / h) merret nga vetë imazhi - te SVG nga viewBox-i (SVG-ja duhet ta ketë).
 const memoriaEImazheve = new Map();
+// Vizatimet e festave u ndanë në nëndosje sipas grupit (fetare/, kombetare/, ...). Shabllonet e ruajtura me
+// adresën e vjetër (/img/qmimore/festive/<skedari>) e marrin këtu të renë, që të mos mbeten pa vizatim.
+const DOSJA_E_FESTAVE = "/img/qmimore/festive/";
+const VIZATIMET_E_ZHVENDOSURA = {
+  "xhamia.png": "fetare/xhamiaMeVije.png",
+  "xhamia.svg": "fetare/xhamia.svg",
+  "xhamiaVale.png": "fetare/xhamiaVale.png",
+  "kurbanBajrami.png": "fetare/xhamiaMeDashin.png",
+  "dashi.png": "fetare/dashi.png",
+  "kosova.svg": "kombetare/kosova.svg",
+  "shqiperia.svg": "kombetare/shqiperia.svg",
+  "babagjyshi.svg": "gjate-vitit/babagjyshi.svg",
+  "tulipanet.png": "gjate-vitit/tulipanet.png",
+  "torta.png": "festime/torta.png",
+  "ofertaSpeciale.svg": "biznesi/ofertaSpeciale.svg",
+};
+export const adresaEVizatimit = (v) => {
+  if (typeof v !== "string" || !v.startsWith(DOSJA_E_FESTAVE)) return v;
+  const i = VIZATIMET_E_ZHVENDOSURA[v.slice(DOSJA_E_FESTAVE.length)];
+  return i ? DOSJA_E_FESTAVE + i : v;
+};
 export const eshteImazhMeAdrese = (v) => typeof v === "string" && v.length > 0 && !v.startsWith("data:");
 
 const permasatESvg = (svg) => {
@@ -543,6 +566,7 @@ const ngarkoImazhin = (src) =>
 
 // Kthen { imazhi: "data:image/png;base64,...", raporti } për një adresë; ana më e gjatë = madhesiaPx.
 export const imazhNgaAdresa = (adresa, madhesiaPx = 800) => {
+  adresa = adresaEVizatimit(adresa);
   const celesi = `${adresa}|${madhesiaPx}`;
   if (!memoriaEImazheve.has(celesi)) {
     const premtimi = (async () => {

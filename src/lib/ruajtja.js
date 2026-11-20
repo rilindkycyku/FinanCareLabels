@@ -60,8 +60,9 @@ const CILESIMET_PARAZGJEDHUR = {
   hapesiraH: 0.8,
   hapesiraV: 0.8,
   orientimi: "auto",
-  // Marginat e fletës (mm): 0 = etiketat deri në skaj, që të nxë sa më shumë (si te tagsprinter.com).
-  margjina: 0,
+  // Margjina minimale e fletës (mm): rrjeta vihet në mes, me orientimin që nxë më shumë etiketa. 2 mm = sa më
+  // shumë etiketa pa i nxjerrë jashtë faqes; 0 = deri në skaj.
+  margjina: 2,
   // "light" (parazgjedhja) ose "dark"
   tema: "light",
   // { "<emri i fletës>": "gati:<celesi>" | "sh:<id>" } - shablloni i zgjedhur për secilën fletë të Excel-it

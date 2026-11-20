@@ -3,6 +3,7 @@ import { Button, Form, Modal, Toast, ToastContainer } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolderOpen, faGear, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
 import Printimi from "./Printimi";
+import ShiritiITitullit from "./components/ShiritiITitullit";
 import Editori from "./Editori";
 import { eshteDesktop, lexoCilesimet, ruajCilesimet } from "./lib/ruajtja";
 
@@ -51,12 +52,13 @@ export default function App() {
 
   return (
     <div className="lb-app">
+      <ShiritiITitullit tema={tema} faqja={FAQET.find(([c]) => c === faqja)?.[1]} />
       <header className="lb-koka">
         <div className="lb-marka">
-          <img src="/logo.png" alt="" width={28} height={28} />
-          <span>
-            FinanCare <strong>Labels</strong>
-          </span>
+          <img src="/logo-shenja.svg" alt="" width={28} height={28} />
+          {/* Fjala "FinanCare" me fontin e logos (FinanCare Logo/vector/isolated-monochrome-*), si te Migratori. */}
+          <img className="lb-marka-fjala" src={tema === "dark" ? "/logo-financare-bardhe.svg" : "/logo-financare-zi.svg"} alt="FinanCare" />
+          <strong>Labels</strong>
         </div>
         <nav className="lb-nav">
           {FAQET.map(([celesi, emri, ikona]) => (
@@ -136,7 +138,7 @@ export default function App() {
         </Modal.Footer>
       </Modal>
 
-      <ToastContainer position="bottom-end" className="p-3" style={{ zIndex: 2000 }}>
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 2000, marginTop: "calc(64px + var(--tb-h))" }}>
         {toast && (
           <Toast key={toast.id} bg={toast.tipi === "success" ? "success" : "danger"} onClose={() => setToast(null)} delay={5000} autohide>
             <Toast.Body className="text-white">{toast.teksti}</Toast.Body>

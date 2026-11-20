@@ -49,7 +49,7 @@ body {
 
 .lb-koka {
   position: sticky;
-  top: 0;
+  top: var(--tb-h);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -66,6 +66,11 @@ body {
   gap: 10px;
   font-size: 1.1rem;
   color: var(--sp-text-strong);
+}
+
+.lb-marka-fjala {
+  height: 20px;
+  width: auto;
 }
 
 .lb-marka svg {
@@ -156,8 +161,11 @@ body {
   max-width: 640px;
 }
 
+/* Dritarja e PDF-së duhet të hyjë e tëra në ekran: koka (~70px), shiriti i printimit (~110px), butonat (~85px)
+   dhe hapësira e dritares (~60px) zbriten nga lartësia; pjesa e PDF-së merr pjesën tjetër. */
 .pdf-pamja {
-  max-height: 75vh;
+  max-height: calc(100vh - 330px - var(--tb-h));
+  min-height: 200px;
   overflow: auto;
   background: var(--lb-pdf-bg);
 }
@@ -168,7 +176,8 @@ body {
   width: auto;
   height: auto;
   max-width: 100%;
-  max-height: calc(78vh - 32px);
+  max-height: calc(100vh - 330px - 32px - var(--tb-h));
+  min-height: 168px;
   margin: 0 auto 16px;
   background: #fff;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
@@ -207,7 +216,7 @@ body {
 @media (min-width: 1200px) {
   .lb-sticky {
     position: sticky !important;
-    top: 84px;
+    top: calc(84px + var(--tb-h));
     align-self: flex-start;
   }
 }
@@ -225,7 +234,7 @@ body {
 .lb-wizard {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
-  height: calc(100vh - 116px);
+  height: calc(100vh - 116px - var(--tb-h));
   min-height: 560px;
   border: 1px solid var(--sp-border);
   border-radius: var(--sp-radius-lg);
@@ -437,7 +446,7 @@ body {
 
 /* Faqja e printimit zë gjithë dritaren: tabela lëviz brenda hapit, jo faqja. */
 .lb-wizard .sp-table-container {
-  max-height: calc(100vh - 430px) !important;
+  max-height: calc(100vh - 430px - var(--tb-h)) !important;
 }
 
 @media (max-width: 991px) {
@@ -471,4 +480,86 @@ body {
   font-style: italic;
   font-weight: 400;
   opacity: 0.75;
+}
+
+/* Zgjedhja e printerit te dritarja e PDF-së (në vend të dialogut të Windows-it, që s'ka parapamje). */
+.pdf-printimi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--sp-border);
+}
+.pdf-printimi-printeri {
+  flex: 1 1 260px;
+  max-width: 380px;
+}
+.pdf-printimi-kopjet {
+  width: 90px;
+}
+.pdf-printimi-info {
+  flex: 1 1 240px;
+  color: var(--sp-text-muted);
+}
+
+/* ---------- Shiriti i titullit (ShiritiITitullit.jsx, si te FinanCare) ----------
+   --tb-h është 0 në shfletues; në aplikacionin desktop (html.ka-shiritin) = LARTESIA_E_SHIRITIT te electron/main.cjs. */
+:root {
+  --tb-h: 0px;
+}
+html.ka-shiritin {
+  --tb-h: 36px;
+}
+html.ka-shiritin body {
+  padding-top: var(--tb-h);
+}
+.tb-shiriti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tb-h);
+  z-index: 2147483000;
+  /* E njëjta ngjyrë me titleBarOverlay (NGJYRAT_E_SHIRITIT) - butonat e Windows-it ngjiten pa vijë. */
+  background: var(--sp-surface);
+  border-bottom: 1px solid var(--sp-border);
+  color: var(--sp-text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 12.5px;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+.tb-permbajtja {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  width: env(titlebar-area-width, calc(100% - 140px));
+  padding: 0 10px;
+}
+.tb-logo {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.tb-emri {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tb-titulli {
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  color: var(--sp-text-muted);
+}
+/* Dritaret (modal) nisin poshtë shiritit, që koka e tyre të mos fshihet pas tij. */
+html.ka-shiritin .modal,
+html.ka-shiritin .modal-backdrop {
+  top: var(--tb-h);
+  height: calc(100% - var(--tb-h));
 }

@@ -13,13 +13,13 @@ const A4 = (rrjeta) => ({ letra: "a4", rrjeta });
 
 const imazh = (skedari, raporti, x, y, w, h, shtese = {}) => ({ lloji: "imazh", imazhi: DOSJA + skedari, raporti, x, y, w, h, ...shtese });
 
-// Vizatimi me vijë (xhamia.png): vija e drejtë majtas, pastaj xhamia djathtas. Urimi shkruhet mbi pjesën e
+// Vizatimi me vijë (fetare/xhamiaMeVije.png): vija e drejtë majtas, pastaj xhamia djathtas. Urimi shkruhet mbi pjesën e
 // drejtë të vijës, si i nënvizuar prej saj. Përpjesët e imazhit (1800 × 491): vija në 70.6% të lartësisë,
 // e drejtë deri në 60% të gjerësisë.
 // trashesia = trashësia e vijës te skaji i majtë / lartësia e imazhit (vazhdimi majtas del njësoj i trashë).
-const VIJA_XHAMIA = { skedari: "xhamia.png", raporti: 1800 / 491, yVijes: 0.709, fundiIDrejte: 0.6, trashesia: 5 / 491 };
+const VIJA_XHAMIA = { skedari: "fetare/xhamiaMeVije.png", raporti: 1800 / 491, yVijes: 0.709, fundiIDrejte: 0.6, trashesia: 5 / 491 };
 // Kurban Bajrami: e njëjta vijë me xhaminë dhe dashin (560 × 161; vija në 73.3%, e drejtë deri në 71%).
-const VIJA_KURBANI = { skedari: "kurbanBajrami.png", raporti: 560 / 161, yVijes: 0.733, fundiIDrejte: 0.71, trashesia: 5 / 161 };
+const VIJA_KURBANI = { skedari: "fetare/xhamiaMeDashin.png", raporti: 560 / 161, yVijes: 0.733, fundiIDrejte: 0.71, trashesia: 5 / 161 };
 
 // Poster 2 për fletë (200 × 143.5, horizontal).
 const poster2 = (f) => [
@@ -40,7 +40,8 @@ const poster2 = (f) => [
   vije(6, 104.5, 188, 1.5, { vija: ZI, trashesia: 0.3 }),
   ...(f.vija ? urimiMbiVije2(f) : [
     tekst(f.urimi, 6, 110, 120, 24, { rreshta: 2, rreshtimi: "left", ngjyra: f.urimiNgjyra || ZI }),
-    imazh(f.imazhi, f.raporti, 130, 106.5, 64, 35),
+    // Vizatimi mbaron 4.5 mm mbi skaj: shumë vizatime (p.sh. torta) s'kanë hapësirë bosh poshtë dhe preknin kornizën.
+    imazh(f.imazhi, f.raporti, 130, 107, 64, 32),
     vije(6, 138, 120, 1.5, { vija: ZI, trashesia: 0.4 }),
   ]),
   korniza(200, 143.5),
@@ -79,7 +80,8 @@ const poster4 = (f) => [
   vije(4, 94, 92, 1.5, { vija: ZI, trashesia: 0.3 }),
   ...(f.vija ? urimiMbiVije4(f) : [
     tekst(f.urimi, 4, 96.5, 92, 10.5, { rreshta: 2, ngjyra: f.urimiNgjyra || ZI }),
-    imazh(f.imazhi, f.raporti, 8, 107.5, 84, 34),
+    // Vizatimi mbaron 4.5 mm mbi skaj: shumë vizatime (p.sh. torta) s'kanë hapësirë bosh poshtë dhe preknin kornizën.
+    imazh(f.imazhi, f.raporti, 8, 108, 84, 31),
   ]),
   korniza(100, 143.5),
 ];
@@ -126,7 +128,7 @@ const FESTAT = [
     koka: "#ffd966",
     titulliNgjyra: ZI,
     dataNgjyra: ZI,
-    imazhi: "xhamia.svg",
+    imazhi: "fetare/xhamia.svg",
     raporti: 1.5,
   },
   {
@@ -140,7 +142,7 @@ const FESTAT = [
     koka: "#1e3a8a",
     titulliNgjyra: "#fde68a",
     dataNgjyra: BARDHE,
-    imazhi: "babagjyshi.svg",
+    imazhi: "gjate-vitit/babagjyshi.svg",
     raporti: 1644.71 / 1757.8,
     raft: true,
   },
@@ -155,7 +157,7 @@ const FESTAT = [
     koka: "#244aa5",
     titulliNgjyra: "#f2d27a",
     dataNgjyra: BARDHE,
-    imazhi: "kosova.svg",
+    imazhi: "kombetare/kosova.svg",
     raporti: 640 / 480,
     raft: true,
   },
@@ -170,7 +172,7 @@ const FESTAT = [
     koka: "#e41e20",
     titulliNgjyra: BARDHE,
     dataNgjyra: BARDHE,
-    imazhi: "shqiperia.svg",
+    imazhi: "kombetare/shqiperia.svg",
     raporti: 640 / 480,
     raft: true,
   },
@@ -187,7 +189,7 @@ const FESTAT = [
     koka: "#6d28d9",
     titulliNgjyra: "#fde68a",
     dataNgjyra: BARDHE,
-    imazhi: "torta.png",
+    imazhi: "festime/torta.png",
     raporti: 1000 / 971,
   },
   {
@@ -202,7 +204,7 @@ const FESTAT = [
     koka: "#14532d",
     titulliNgjyra: BARDHE,
     dataNgjyra: "#f2c94c",
-    imazhi: "xhamiaVale.png",
+    imazhi: "fetare/xhamiaVale.png",
     raporti: 900 / 626,
     raft: true,
   },
@@ -218,7 +220,7 @@ const FESTAT = [
     koka: "#166534",
     titulliNgjyra: BARDHE,
     dataNgjyra: "#f2c94c",
-    imazhi: "xhamiaVale.png",
+    imazhi: "fetare/xhamiaVale.png",
     raporti: 900 / 626,
     raft: true,
   },
@@ -234,7 +236,7 @@ const FESTAT = [
     koka: "#166534",
     titulliNgjyra: BARDHE,
     dataNgjyra: "#f2c94c",
-    imazhi: "dashi.png",
+    imazhi: "fetare/dashi.png",
     raporti: 899 / 900,
     raft: true,
   },
@@ -249,7 +251,7 @@ const FESTAT = [
     koka: "#be185d",
     titulliNgjyra: BARDHE,
     dataNgjyra: "#fde68a",
-    imazhi: "tulipanet.png",
+    imazhi: "gjate-vitit/tulipanet.png",
     raporti: 855 / 1000,
   },
   {
@@ -263,7 +265,7 @@ const FESTAT = [
     koka: "#db2777",
     titulliNgjyra: BARDHE,
     dataNgjyra: "#fde68a",
-    imazhi: "torta.png",
+    imazhi: "festime/torta.png",
     raporti: 1000 / 971,
     raft: true,
   },
@@ -271,7 +273,7 @@ const FESTAT = [
     celesi: "ofertaSpeciale",
     grupi: "Biznesi",
     emri: "Ofertë speciale",
-    pershkrimi: "Ofertë e përgjithshme - ylli me përqindjen",
+    pershkrimi: "Ofertë e përgjithshme - shenja e uljes me përqindjen",
     titulli: "OFERTË SPECIALE",
     titulliShkurt: "OFERTË SPECIALE",
     urimi: "VETËM PËR PAK DITË!",
@@ -279,8 +281,9 @@ const FESTAT = [
     titulliNgjyra: "#ffec00",
     dataNgjyra: BARDHE,
     urimiNgjyra: KUQE,
-    imazhi: "ofertaSpeciale.svg",
-    raporti: 1.5,
+    // Shenja e uljes me % (vizatim me vijë, si torta), 24 × 24.
+    imazhi: "biznesi/ofertaSpeciale.svg",
+    raporti: 1,
   },
 ];
 

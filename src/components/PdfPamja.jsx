@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Modal, Spinner } from "react-bootstrap";
+import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinus, faMagnifyingGlassPlus, faPrint } from "@fortawesome/free-solid-svg-icons";
 import { pdfjsLib } from "../lib/pdfjs";
@@ -9,6 +9,26 @@ const PT_NE_MM = 25.4 / 72;
 // Hapat e zoom-it te dritarja e PDF-së (1 = madhësia reale e letrës).
 const HAPAT_E_ZOOMIT = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 const DPI_PRINTIMI = 300;
+// Printeri i fundit i zgjedhur - vetëm lehtësi për këtë kompjuter.
+const CELESI_PRINTERIT = "financare-labels:printeri";
+const lexoPrinterin = () => {
+  try {
+    return localStorage.getItem(CELESI_PRINTERIT);
+  } catch {
+    return null;
+  }
+};
+const ruajPrinterin = (emri) => {
+  try {
+    localStorage.setItem(CELESI_PRINTERIT, emri);
+  } catch {
+    /* s'ka rëndësi */
+  }
+};
+// Printerat e kuponave (termikë 58/80 mm) s'e marrin dot një fletë A4.
+const eshteTermik = (emri) => /pos|thermal|termik|receipt|xp-?\d|tm-?t\d|(^|[^\d])(58|80)(c|mm)?([^\d]|$)/i.test(emri || "");
+// "" = dritarja e printimit e Windows-it (për cilësime të avancuara të driverit).
+const DIALOGU_WINDOWS = "";
 
 // zoom = null: faqja përshtatet në dritare (me CSS); ndryshe madhësia reale (100% = 96 dpi) × zoom.
 const aplikoZoom = (c, zoom) => {
@@ -118,6 +138,52 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
   // Zoom-i: null = përshtatur në dritare; 1 = madhësia reale. Rikthehet te përshtatja për çdo PDF të re.
   const [zoom, setZoom] = useState(null);
   useEffect(() => setZoom(null), [pdf]);
+
+  // Printeri dhe kopjet zgjidhen këtu: dialogu i Windows-it s'ka parapamje për aplikacionin, parapamja është kjo dritare.
+  const [printerat, setPrinterat] = useState(null);
+  const [printeri, setPrinteri] = useState(DIALOGU_WINDOWS);
+  const [kopjet, setKopjet] = useState(1);
+  const [letra, setLetra] = useState(null); // { w, h } në mm, nga faqja e parë
+  useEffect(() => {
+    if (!pdf || !eshteDesktop || printerat) return;
+    let anulo = false;
+    window.labels
+      .printerat()
+      .then((lista) => {
+        if (anulo) return;
+        setPrinterat(lista);
+        const iFundit = lexoPrinterin();
+        const zgjedhur = lista.find((p) => p.emri === iFundit) || lista.find((p) => p.parazgjedhur) || lista[0];
+        setPrinteri(iFundit === DIALOGU_WINDOWS ? DIALOGU_WINDOWS : zgjedhur?.emri ?? DIALOGU_WINDOWS);
+      })
+      .catch(() => !anulo && setPrinterat([]));
+    return () => {
+      anulo = true;
+    };
+  }, [pdf, printerat]);
+  useEffect(() => {
+    setKopjet(1);
+    setLetra(null);
+    if (!pdf) return;
+    let anulo = false;
+    (async () => {
+      const doc = await pdfjsLib.getDocument({ data: await pdf.blob.arrayBuffer() }).promise;
+      try {
+        const v = (await doc.getPage(1)).getViewport({ scale: 1 });
+        if (!anulo) setLetra({ w: Math.round(v.width * PT_NE_MM), h: Math.round(v.height * PT_NE_MM) });
+      } finally {
+        doc.destroy();
+      }
+    })().catch(() => {});
+    return () => {
+      anulo = true;
+    };
+  }, [pdf]);
+  const zgjidhPrinterin = (emri) => {
+    setPrinteri(emri);
+    ruajPrinterin(emri);
+  };
+  const paralajmerimTermik = printeri && letra && letra.w > 90 && eshteTermik(printeri);
   const zoomiAktual = zoom ?? 0.7;
   const zmadho = () => setZoom(HAPAT_E_ZOOMIT.find((z) => z > zoomiAktual + 0.01) ?? HAPAT_E_ZOOMIT[HAPAT_E_ZOOMIT.length - 1]);
   const zvogelo = () => setZoom([...HAPAT_E_ZOOMIT].reverse().find((z) => z < zoomiAktual - 0.01) ?? HAPAT_E_ZOOMIT[0]);
@@ -140,8 +206,11 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
     try {
       const { faqet, w, h } = await faqetPerPrintim(pdf.blob, (n, gjithsej) => setProgresi(`${n}/${gjithsej}`));
       setProgresi(null);
-      const r = await window.labels.printoPdf(faqet, Math.round(w * 10) / 10, Math.round(h * 10) / 10);
-      if (r?.ok) onUKrye?.("printim");
+      const r = await window.labels.printoPdf(faqet, Math.round(w * 10) / 10, Math.round(h * 10) / 10, { printeri, kopjet });
+      if (r?.ok) {
+        onUKrye?.("printim");
+        if (printeri) onMesazh?.("success", `U dërgua te ${printeri}${kopjet > 1 ? ` (${kopjet} kopje)` : ""}.`);
+      }
       else if (!r?.anuluar) await hapPasDeshtimit(r?.arsyeja);
     } catch (err) {
       await hapPasDeshtimit(err?.message || String(err));
@@ -194,6 +263,45 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
       <Modal.Body className="pdf-pamja">
         {pdf && <PdfKanvasi blob={pdf.blob} zoom={zoom} gjeresia={zoom && zoom > 1 ? Math.round(900 * Math.min(zoom, 2.5)) : 900} />}
       </Modal.Body>
+      {eshteDesktop && (
+        <div className="pdf-printimi">
+          <Form.Group className="pdf-printimi-printeri">
+            <Form.Label className="small mb-1">Printeri</Form.Label>
+            <Form.Select size="sm" value={printeri} disabled={!printerat || Boolean(duke)} onChange={(e) => zgjidhPrinterin(e.target.value)}>
+              {!printerat && <option value={printeri}>Duke i kërkuar printerat...</option>}
+              {printerat?.map((p) => (
+                <option key={p.emri} value={p.emri}>
+                  {p.shfaqja}
+                  {p.parazgjedhur ? " (parazgjedhur)" : ""}
+                </option>
+              ))}
+              <option value={DIALOGU_WINDOWS}>Dritarja e printimit e Windows-it...</option>
+            </Form.Select>
+          </Form.Group>
+          <Form.Group className="pdf-printimi-kopjet">
+            <Form.Label className="small mb-1">Kopje</Form.Label>
+            <Form.Control
+              size="sm"
+              type="number"
+              min={1}
+              max={99}
+              value={kopjet}
+              disabled={!printeri || Boolean(duke)}
+              onChange={(e) => setKopjet(Math.min(Math.max(parseInt(e.target.value) || 1, 1), 99))}
+            />
+          </Form.Group>
+          <div className="pdf-printimi-info small">
+            {letra && (
+              <div>
+                Letra: {letra.w === 210 && letra.h === 297 ? "A4" : `${letra.w} × ${letra.h} mm`} · pa margjina · madhësia reale (100%)
+              </div>
+            )}
+            {printerat?.length === 0 && <div className="text-warning">Nuk u gjet asnjë printer i instaluar.</div>}
+            {paralajmerimTermik && <div className="text-warning">Ky duket printer kuponash (termik) - fleta {letra.w} mm nuk del e plotë në të.</div>}
+            {printeri === DIALOGU_WINDOWS && <div className="text-white-50">Hapet dritarja e Windows-it (pa parapamje) - parapamja është kjo më sipër.</div>}
+          </div>
+        </div>
+      )}
       <Modal.Footer>
         <div className="d-flex align-items-center gap-1 me-auto">
           <Button variant="secondary" size="sm" className="btn-cancel" title="Zvogëlo" disabled={zoom === HAPAT_E_ZOOMIT[0]} onClick={zvogelo}>

@@ -126,7 +126,8 @@ const perqindja = (rabati) => `-${parseFloat(Number(rabati || 0).toFixed(1))}%`;
 // orientimi: "auto" = ai me më shumë etiketa (në barazim, portret), ose "portret" / "peisazh".
 const SIGURIA_SKAJIT = 2;
 const kapaciteti = (brenda, madhesia, hapesira) => Math.max(1, Math.floor((brenda + hapesira) / (madhesia + hapesira)));
-// margjina (mm): sa larg skajit të letrës mbeten etiketat; 0 = deri në skaj (si te tagsprinter.com).
+// margjina (mm): minimumi nga skaji i letrës - etiketat s'i afrohen skajit më shumë; 0 = deri në skaj.
+// Kthen edhe margjinat reale (anash, lartPoshte), sepse rrjeta vihet në mes.
 export const planiFletes = (shablloni, orientimi = "auto", reqH = 0, reqV = 0, margjina = SIGURIA_SKAJIT) => {
   const m = Math.max(0, Math.min(Number(margjina) || 0, 30));
   const r = shablloni ? rrjetaEShabllonit(shablloni) : null;
@@ -141,9 +142,33 @@ export const planiFletes = (shablloni, orientimi = "auto", reqH = 0, reqV = 0, m
     const kolonat = kapaciteti(fw - 2 * m, w, gH);
     const rreshtat = kapaciteti(fh - 2 * m, h, gV);
     const perFaqe = kolonat * rreshtat;
-    if (!zgjedhur || perFaqe > zgjedhur.perFaqe) zgjedhur = { orientimi: o, kolonat, rreshtat, perFaqe, gH, gV };
+    if (!zgjedhur || perFaqe > zgjedhur.perFaqe) {
+      // Rrjeta vihet në mes: pjesa e mbetur ndahet njësoj në të dy anët, që etiketat të jenë sa më larg skajit
+      // (mbrojtja më e mirë nga prerja e printerit). Margjina e zgjedhur është minimumi, kjo është ajo reale.
+      const anash = (fw - (kolonat * w + (kolonat - 1) * gH)) / 2;
+      const lartPoshte = (fh - (rreshtat * h + (rreshtat - 1) * gV)) / 2;
+      zgjedhur = { orientimi: o, kolonat, rreshtat, perFaqe, gH, gV, margjina: m, anash, lartPoshte };
+    }
   }
   return zgjedhur;
+};
+
+// Rregullimet e fletës të parazgjedhura për një shabllon: ato që nxënë më shumë etiketa në A4 me margjinë 2 mm.
+// Provohen hapësirat 0.8 mm (prerje më e lehtë) dhe 0 (etiketat ngjitur, një vijë e përbashkët prerjeje); fiton ajo me
+// më shumë etiketa, në barazim 0.8 mm. Shablloni mund t'i japë vetë (shablloni.fleta = { hapesiraH, hapesiraV,
+// margjina, orientimi }), p.sh. kur fleta e printerit ka përmasa të njohura.
+export const FLETA_PARAZGJEDHUR = { hapesiraH: 0.8, hapesiraV: 0.8, margjina: SIGURIA_SKAJIT, orientimi: "auto" };
+export const fletaEParazgjedhur = (shablloni) => {
+  if (!shablloni) return FLETA_PARAZGJEDHUR;
+  if (shablloni.fleta && typeof shablloni.fleta === "object") return { ...FLETA_PARAZGJEDHUR, ...shablloni.fleta };
+  let mira = FLETA_PARAZGJEDHUR;
+  let sa = planiFletes(shablloni, "auto", 0.8, 0.8, SIGURIA_SKAJIT)?.perFaqe ?? 0;
+  const ngjitur = planiFletes(shablloni, "auto", 0, 0, SIGURIA_SKAJIT)?.perFaqe ?? 0;
+  if (ngjitur > sa) {
+    mira = { ...FLETA_PARAZGJEDHUR, hapesiraH: 0, hapesiraV: 0 };
+    sa = ngjitur;
+  }
+  return mira;
 };
 
 export const vizatoQmimoren = (products, opsionet = {}) => {
@@ -519,12 +544,11 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     return doc;
   }
 
-  // Rrjeta vihet në mes të fletës; mes etiketave ka hapësirë (mm) për prerje. Çdo etiketë mbetet me përmasat e vet.
-  const { kolonat, rreshtat, perFaqe, gH, gV } = plani;
-  const gjeresiaRrjetes = kolonat * w + (kolonat - 1) * gH;
-  const lartesiaRrjetes = rreshtat * h + (rreshtat - 1) * gV;
-  const xFillimi = (doc.internal.pageSize.getWidth() - gjeresiaRrjetes) / 2;
-  const yFillimi = (doc.internal.pageSize.getHeight() - lartesiaRrjetes) / 2;
+  // Orientimi dhe rrjeta zgjidhen nga planiFletes (sa më shumë etiketa me margjinën minimale të zgjedhur); rrjeta
+  // vihet në mes të fletës, që etiketat të jenë sa më larg skajit. Mes etiketave ka hapësirë (mm) për prerje.
+  const { kolonat, perFaqe, gH, gV } = plani;
+  const xFillimi = plani.anash;
+  const yFillimi = plani.lartPoshte;
   products.forEach((product, i) => {
     if (i > 0 && i % perFaqe === 0) {
       doc.addPage(plani.orientimi === "l" ? [297, 210] : [210, 297], plani.orientimi);
@@ -534,7 +558,7 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     const x = xFillimi + (n % kolonat) * (w + gH);
     const y = yFillimi + Math.floor(n / kolonat) * (h + gV);
     vizatoEtiketen(product, x, y);
-    if (shablloni.vijaPrerjes) korniza(x, y, w, h, 0.1, NGJYRA.vija);
+    if (shablloni.vijaPrerjes) korniza(x, y, w, h, 0.3, NGJYRA.zi); // vijë prerjeje e zezë e fortë
   });
 
   return doc;

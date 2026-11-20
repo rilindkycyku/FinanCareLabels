@@ -81,12 +81,13 @@ export default [
     emri: "Zbritje - 14 për fletë A4 (71.5 × 40.8 mm)",
     pershkrimi: "Emri lart, shigjeta ZBRITJE, çmimi i vjetër i prerë dhe i riu",
     shablloni: shabllon(71.5, 40.8, { letra: "a4", rrjeta: "2x7-715" }, [
-      emri(2, 2, 40, 12, { rreshta: 2, rreshtimi: "left", madhesia: 18 }),
-      { lloji: "shigjete", teksti: "ZBRITJE", x: 2, y: 17, w: 24, h: 11, kushti: "zbritje" },
-      qmimi("vjeter", 44, 17, 26, 11, { ngjyra: GRI, iPrere: true, rreshtimi: "right", kushti: "zbritje" }),
-      qmimi("aktual", 26, 16, 44, 19, { rreshtimi: "center" }),
-      tekst("{barkodi}", 2, 32, 30, 5, { rreshtimi: "left", madhesia: 9, trashe: false }),
-      tekst("{shteti}", 36, 31, 33, 6, { rreshtimi: "right", madhesia: 11 }),
+      // Pa mbivendosje: çmimi i vjetër lart djathtas (pranë emrit), i riu poshtë tij, shteti dhe barkodi në fund.
+      emri(2, 2, 42, 12, { rreshta: 2, rreshtimi: "left", madhesia: 18 }),
+      qmimi("vjeter", 46, 3, 23.5, 9, { ngjyra: GRI, iPrere: true, rreshtimi: "right", kushti: "zbritje" }),
+      { lloji: "shigjete", teksti: "ZBRITJE", x: 2, y: 17, w: 22, h: 10, kushti: "zbritje" },
+      qmimi("aktual", 26, 14, 43.5, 18, { rreshtimi: "right" }),
+      tekst("{barkodi}", 2, 34, 34, 5, { rreshtimi: "left", madhesia: 9, trashe: false }),
+      tekst("{shteti}", 38, 33.5, 31.5, 5.5, { rreshtimi: "right", madhesia: 11 }),
     ]),
   },
   {
