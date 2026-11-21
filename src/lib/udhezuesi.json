@@ -7,7 +7,7 @@
       "titulli": "1. Fillimi",
       "paragrafet": [
         "Programi është një exe portabël: e hapni me dy klikime, pa instalim. Pranë exe-së krijohet dosja \"FinanCareLabels-Data\", ku ruhen shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje.",
-        "Hapja e parë e çdo versioni zgjat pak (shfaqet \"Duke u përgatitur herën e parë të këtij versioni\"): programi përgatitet një herë te %LOCALAPPDATA%\\FinanCareLabels. Hapjet e tjera janë të shpejta.",
+        "Hapja e parë e çdo versioni zgjat pak (shfaqet \"Duke u përgatitur herën e parë të këtij versioni\"): programi përgatitet një herë te dosja FinanCareLabels-Data pranë exe-së (nënosja app-<versioni>). Hapjet e tjera janë të shpejta.",
         "Lart janë katër faqet: Printimi, Editori i shablloneve, Udhëzuesi (kjo faqe) dhe Cilësimet. Me butonin e hënës/diellit ndërroni temën e çelët/të errët."
       ],
       "hapat": [
@@ -67,7 +67,7 @@
       "titulli": "5. Hapi 3 - Opsionet",
       "hapat": [
         "Stili i çmimit: 39⁹³ € (centet lart) ose 39.93 €.",
-        "Fikni ose ndizni: barkodin, simbolin €, flamurin, emrin e shtetit dhe vijat e prerjes. Pa €, pa flamur ose pa shtet çmimi dhe emri dalin më të mëdhenj.",
+        "Fikni ose ndizni: barkodin, simbolin €, flamurin, emrin e shtetit dhe vijat e prerjes. Me \"Zmadho çmimin në vendin e lirë\", çmimi dhe emri zënë vendin e asaj që fikët (barkodi, flamuri, shteti) dhe dalin më të mëdhenj; pa € çmimi del gjithmonë më i madh.",
         "Orientimi i fletës: Automatik zgjedh portret ose peisazh sipas asaj që nxë më shumë etiketa.",
         "Hapësira horizontale/vertikale: mm bosh mes etiketave për prerje. Margjina minimale: sa larg skajit të letrës qëndrojnë etiketat. Shumica e printerave s'printojnë 3-5 mm te skaji - kur shihni paralajmërimin, zgjidhni 4-5 mm.",
         "Rregullimet ruhen për çdo shabllon; \"Rikthe parazgjedhjen e shabllonit\" i kthen siç ishin."

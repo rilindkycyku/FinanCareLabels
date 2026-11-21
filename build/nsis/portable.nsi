@@ -2,9 +2,10 @@
 ; e vendos scripts/nisesi-portabel.mjs para paketimit).
 ;
 ; Origjinali e shpaketonte gjithë programin (~250 MB) në %TEMP% në ÇDO hapje dhe e fshinte në mbyllje: hapja zgjaste
-; disa sekonda (edhe më shumë nga USB ose me antivirusin). Këtu shpaketohet vetëm herën e parë të çdo versioni, te
-; %LOCALAPPDATA%\FinanCareLabels\app-<versioni> (jo %TEMP%, që e pastron Windows-i); hapjet e tjera nisin direkt.
-; Versionet e vjetra fshihen pas shpaketimit të ri. Të dhënat (FinanCareLabels-Data pranë exe-së) s'preken.
+; disa sekonda (edhe më shumë nga USB ose me antivirusin). Këtu shpaketohet vetëm herën e parë të çdo versioni, si te
+; ULM pranë exe-së: FinanCareLabels-Data\app-<versioni> (bashkë me të dhënat - asgjë në kompjuter). Kur dosja pranë
+; exe-së s'shkruhet (p.sh. disk vetëm për lexim), te %LOCALAPPDATA%\FinanCareLabels\app-<versioni>. Hapjet e tjera nisin
+; direkt; versionet e vjetra fshihen pas shpaketimit të ri. Të dhënat e programit s'preken.
 
 !include "common.nsh"
 !include "extractAppPackage.nsh"
@@ -22,7 +23,18 @@ Function .onInit
 FunctionEnd
 
 Section
-  StrCpy $DOSJA_BAZE "$LOCALAPPDATA\FinanCareLabels"
+  ; Pranë exe-së nëse aty mund të shkruhet, ndryshe %LOCALAPPDATA%.
+  StrCpy $DOSJA_BAZE "$EXEDIR\FinanCareLabels-Data"
+  ClearErrors
+  CreateDirectory $DOSJA_BAZE
+  FileOpen $0 "$DOSJA_BAZE\.provo-shkrimin" w
+  IfErrors 0 shkruhet
+    StrCpy $DOSJA_BAZE "$LOCALAPPDATA\FinanCareLabels"
+    Goto dosja_gati
+  shkruhet:
+    FileClose $0
+    Delete "$DOSJA_BAZE\.provo-shkrimin"
+  dosja_gati:
   StrCpy $INSTDIR "$DOSJA_BAZE\app-${VERSION}"
 
   ; Shpaketimi i plotë lë "gati.txt" në fund; pa të (ose pa skedarët kryesorë) shpaketohet përsëri.

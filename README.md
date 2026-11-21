@@ -54,7 +54,8 @@ sipas përmbajtjes. Kur s'njihen, "Lidh kolonat" i lidh me dorë dhe lidhja ruhe
 
 Nisësi standard i exe-së portabël të electron-builder-it e shpaketon gjithë programin në `%TEMP%` në çdo hapje.
 `build/nsis/portable.nsi` (e vendos `scripts/nisesi-portabel.mjs` para paketimit, nga `build.ps1` dhe `npm run dist`)
-e shpaketon vetëm herën e parë të çdo versioni te `%LOCALAPPDATA%\FinanCareLabels\app-<versioni>`, me
+e shpaketon vetëm herën e parë të çdo versioni, si te ULM pranë exe-së: `FinanCareLabels-Data\app-<versioni>`
+(kur aty s'shkruhet: `%LOCALAPPDATA%\FinanCareLabels\app-<versioni>`), me
 `build/splash.bmp`, dhe fshin versionet e vjetra; hapjet e tjera nisin direkt. Paketohen vetëm gjuhët `en-US` të Chromium-it dhe me ngjeshje normale: exe-ja ~70 MB (më parë ~290 MB).
 
 ## Të dhënat

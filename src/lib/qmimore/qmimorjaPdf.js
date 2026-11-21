@@ -188,6 +188,8 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     // Flamuri dhe emri i shtetit (origjina) - si "Shfaq barkodin", fiken për të gjitha etiketat.
     shfaqFlamurin = true,
     shfaqShtetin = true,
+    // Kur fiken barkodi/flamuri/shteti, çmimi dhe emri zënë vendin e tyre (shablloniQmimores.kutiteMeVendinELire).
+    zmadhoNeVendinELire = true,
     // Vijat e prerjes: null = sipas shabllonit, true/false = gjithmonë / kurrë.
     vijatEPrerjes = null,
     orientimi = "auto",
@@ -513,6 +515,7 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     shfaqBarkodin,
     shfaqFlamurin,
     shfaqShtetin,
+    zmadhoNeVendinELire,
     merrRabatin,
     merrQmiminMeZbritje,
     kaQmimShumice,

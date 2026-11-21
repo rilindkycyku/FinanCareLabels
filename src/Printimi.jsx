@@ -494,6 +494,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       shfaqEuro: cilesimet.shfaqEuro !== false,
       shfaqFlamurin: cilesimet.shfaqFlamurin !== false,
       shfaqShtetin: cilesimet.shfaqShtetin !== false,
+      zmadhoNeVendinELire: cilesimet.zmadhoNeVendinELire !== false,
       vijatEPrerjes: cilesimet.vijatEPrerjes === true || cilesimet.vijatEPrerjes === false ? cilesimet.vijatEPrerjes : null,
       stiliQmimit: cilesimet.stiliQmimit === "dhjetore" ? "dhjetore" : "centet",
       tekstet: { data },
@@ -506,7 +507,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       orientimi: rregullimi.orientimi || "auto",
       margjina: Number(rregullimi.margjina) || 0,
     }),
-    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.shfaqShtetin, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
+    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
   );
 
   /* ---------- Historiku i printimeve: e njëjta çmimore s'printohet dy herë pa e ditur ---------- */
@@ -518,7 +519,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const indeksi = useMemo(() => indeksoHistorikun(historiku), [historiku]);
   // Gjurma varet vetëm nga ajo që del në letër (jo nga fontet/flamujt që ngarkohen).
   const opsionetEGjurmes = useMemo(
-    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, sh: opsionet.shfaqShtetin, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
+    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, sh: opsionet.shfaqShtetin, zv: opsionet.zmadhoNeVendinELire, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
     [opsionet]
   );
   const [gjurmet, setGjurmet] = useState(null); // { puna, etiketat } për produktet aktuale
@@ -1040,6 +1041,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     ["shfaqEuro", "Simboli €", "Pa €, çmimi del më i madh"],
                     ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
                     ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
+                    ["zmadhoNeVendinELire", "Zmadho çmimin në vendin e lirë", "Kur fikni barkodin, flamurin ose shtetin, çmimi dhe emri zënë vendin e tyre"],
                   ].map(([celesi, emri, shpjegimi]) => (
                     <Form.Check
                       key={celesi}
