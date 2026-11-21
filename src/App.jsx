@@ -29,6 +29,7 @@ export default function App() {
   const [cilesimet, setCilesimet] = useState(null);
   const [toast, setToast] = useState(null);
   const [dosja, setDosja] = useState("");
+  const [menyra, setMenyra] = useState(""); // "portabel" | "instaluar" | "zhvillim"
   const [largimi, setLargimi] = useState(null); // faqja ku do të shkohet pas konfirmimit
   const editoriNdryshuar = useRef(false);
   // Shablloni .qmimore.json i lëshuar në dritare, për importin te Editori.
@@ -41,7 +42,10 @@ export default function App() {
 
   useEffect(() => {
     lexoCilesimet().then(setCilesimet);
-    if (eshteDesktop) window.labels.dosjaETeDhenave().then(setDosja);
+    if (eshteDesktop) {
+      window.labels.dosjaETeDhenave().then(setDosja);
+      window.labels.menyra().then(setMenyra).catch(() => {});
+    }
   }, []);
 
   // Tema e çelët është parazgjedhja; "light-mode" vendoset te <html> dhe <body> si te FinanCare
@@ -321,7 +325,11 @@ export default function App() {
             {kontrolli && kontrolli !== "duke" && <div className="small text-white-50 mt-2">{kontrolli}</div>}
             <div className="ql-titulli-seksionit mt-4">Të dhënat</div>
             <div className="text-white-50 small mb-2">
-              Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë dosje, pranë exe-së portabël. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje. Nuk dërgohet asgjë në internet.
+              Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë dosje
+              {menyra === "instaluar"
+                ? " (programi i instaluar). Kur kaloni nga versioni portabël, merrni të dhënat e tij me butonin më poshtë."
+                : ", pranë exe-së portabël. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje."}{" "}
+              Nuk dërgohet asgjë në internet.
             </div>
             <div className="d-flex align-items-center gap-2">
               <code className="text-info">{dosja || "localStorage (shfletuesi)"}</code>
@@ -329,6 +337,28 @@ export default function App() {
                 <Button variant="secondary" size="sm" className="btn-cancel" onClick={() => window.labels.hapDosjenETeDhenave()}>
                   <FontAwesomeIcon icon={faFolderOpen} className="me-2" />
                   Hap dosjen
+                </Button>
+              )}
+              {menyra === "instaluar" && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="btn-cancel"
+                  title="Kopjo shabllonet, cilësimet, produktet dhe historikun nga dosja FinanCareLabels-Data e versionit portabël"
+                  onClick={async () => {
+                    try {
+                      const n = await window.labels.importoNgaDosja();
+                      if (n) {
+                        mesazh("success", "Të dhënat e portablit u morën. Programi po rifreskohet...");
+                        setTimeout(() => window.location.reload(), 1200);
+                      }
+                    } catch (err) {
+                      mesazh("danger", String(err?.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+                    }
+                  }}
+                >
+                  <FontAwesomeIcon icon={faFileImport} className="me-2" />
+                  Merr të dhënat nga portabli
                 </Button>
               )}
             </div>

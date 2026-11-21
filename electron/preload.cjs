@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('labels', {
     }
   },
   versioni: () => ipcRenderer.invoke('app:versioni'),
+  // 'portabel' | 'instaluar' | 'zhvillim'
+  menyra: () => ipcRenderer.invoke('app:menyra'),
+  importoNgaDosja: () => ipcRenderer.invoke('te-dhenat:importo-nga-dosja'),
   perditesimi: {
     kontrollo: () => ipcRenderer.invoke('perditesimi:kontrollo'),
     shkarko: () => ipcRenderer.invoke('perditesimi:shkarko'),

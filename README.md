@@ -1,6 +1,9 @@
 # FinanCare Labels
 
-Çmimorja e rafteve nga Excel-i, si aplikacion desktop **portabël** (një exe, pa instalim) dhe **pa internet**.
+Çmimorja e rafteve nga Excel-i, si aplikacion desktop **pa internet**, në dy forma nga i njëjti build:
+**Setup** (instaluesi për përdoruesin, pa leje administratori; të dhënat te `%APPDATA%\FinanCareLabels`) dhe
+**Portable** (një exe pa instalim, për USB; të dhënat te `FinanCareLabels-Data` pranë exe-së). Te Cilësimet,
+"Merr të dhënat nga portabli" i kalon të dhënat te i instaluari.
 Përdor të njëjtin motor etiketash, shabllone të gatshme, flamuj (flag-icons), fontet (Barlow Condensed) dhe vizatime
 festive si "Shtyp Çmimet" / "Shabllonet e Çmimores" te FinanCare.
 
@@ -30,7 +33,8 @@ Printimi bëhet në 100%, punët dërgohen një nga një dhe dritarja e printimi
 Programi kontrollon `releases/latest` te GitHub (repo publik, pa token). Exe-ja portabël e re shkarkohet pranë asaj
 të vjetrës si `<exe>.perditesim` (verifikohet madhësia dhe SHA-256 kur GitHub e jep), pastaj një skript PowerShell i
 fshehur pret mbylljen, e zëvendëson exe-në me të njëjtin emër dhe e hap përsëri. Në release duhet ngarkuar exe-ja
-portabël (emri përmban "Portable" dhe mbaron me `.exe`). Çka ka të re: `src/lib/ndryshimet.js`.
+portabël dhe Setup-i (emrat përmbajnë "Portable" / "Setup" dhe mbarojnë me `.exe`): portabli zëvendëson exe-në, i
+instaluari e instalon Setup-in e ri në heshtje (`/S --updated --force-run`). Çka ka të re: `src/lib/ndryshimet.js`.
 
 ### Kolonat e Excel-it
 

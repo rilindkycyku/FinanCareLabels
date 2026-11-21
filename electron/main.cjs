@@ -4,7 +4,7 @@
 // protokollin app://, të dhënat (shabllonet, cilësimet) ruhen si JSON.
 //
 // Mënyra USB (si te ULM): exe-ja portabël krijon pranë vetes dosjen "FinanCareLabels-Data" dhe gjithçka -
-// edhe sesioni i Electron-it - ruhet atje, pa lënë gjurmë në kompjuter. Pa atë dosje: %APPDATA%.
+// edhe sesioni i Electron-it - ruhet atje, pa lënë gjurmë në kompjuter. I instaluari (Setup) dhe pa atë dosje: %APPDATA%.
 
 const path = require('path')
 const fs = require('fs')
@@ -65,6 +65,28 @@ ipcMain.handle('te-dhenat:ruaj', (_e, emri, vlera) => {
 })
 
 ipcMain.handle('te-dhenat:dosja', () => DATA_DIR)
+ipcMain.handle('app:menyra', () => (!app.isPackaged ? 'zhvillim' : EXE_PORTABEL ? 'portabel' : 'instaluar'))
+
+// Kalimi nga portabli te i instaluari: shabllonet, cilësimet, produktet dhe historiku merren nga dosja
+// FinanCareLabels-Data e portablit (kopjohen; ato ekzistuese ruhen si .para-importit).
+ipcMain.handle('te-dhenat:importo-nga-dosja', async () => {
+  const r = await dialog.showOpenDialog(mainWindow, {
+    title: 'Zgjidh dosjen FinanCareLabels-Data të versionit portabël',
+    properties: ['openDirectory']
+  })
+  if (r.canceled || !r.filePaths[0]) return null
+  const burimi = r.filePaths[0]
+  if (path.resolve(burimi) === path.resolve(DATA_DIR)) throw new Error('Kjo është dosja e këtij programi.')
+  const teGjetura = Object.values(SKEDARET).filter((f) => fs.existsSync(path.join(burimi, f)))
+  if (!teGjetura.length) throw new Error('Në këtë dosje s\'ka shabllone ose cilësime të FinanCare Labels.')
+  for (const f of teGjetura) {
+    JSON.parse(fs.readFileSync(path.join(burimi, f), 'utf8')) // vetëm JSON i vlefshëm
+    const synimi = path.join(DATA_DIR, f)
+    if (fs.existsSync(synimi)) fs.copyFileSync(synimi, `${synimi}.para-importit`)
+    fs.copyFileSync(path.join(burimi, f), synimi)
+  }
+  return teGjetura.length
+})
 ipcMain.handle('te-dhenat:hap-dosjen', () => shell.openPath(DATA_DIR))
 
 /* ---------- Excel-i ---------- */
@@ -197,6 +219,8 @@ async function printoFaqet(faqet, gjeresiaMm, lartesiaMm, opsionet = {}) {
 // shkurtoret mbeten) dhe e nis përsëri. Dosja FinanCareLabels-Data pranë exe-së s'preket.
 const REPO = 'rilindkycyku/FinanCareLabels'
 const EXE_PORTABEL_SKEDARI = process.env.PORTABLE_EXECUTABLE_FILE || ''
+// I instaluari (Setup) përditësohet me Setup-in e ri, në heshtje (/S), dhe hapet vetë pas instalimit (--force-run).
+const I_INSTALUAR = app.isPackaged && !EXE_PORTABEL && process.platform === 'win32'
 let perditesimi = null // { versioni, url, madhesia, sha256, faqja, shenimet }
 let skedariIShkarkuar = ''
 
@@ -219,7 +243,9 @@ ipcMain.handle('perditesimi:kontrollo', async () => {
   if (!r.ok) throw new Error(`GitHub: ${r.status}`)
   const d = await r.json()
   const versioni = String(d.tag_name || '').replace(/^v/i, '')
-  const exe = (d.assets || []).find((a) => /portable.*\.exe$/i.test(a.name)) || (d.assets || []).find((a) => /\.exe$/i.test(a.name))
+  const asetet = (d.assets || []).filter((a) => /\.exe$/i.test(a.name))
+  // Portabli merr exe-në "Portable", i instaluari "Setup" - secili zëvendësohet me llojin e vet.
+  const exe = I_INSTALUAR ? asetet.find((a) => /setup/i.test(a.name)) : asetet.find((a) => /portable/i.test(a.name)) || asetet.find((a) => !/setup/i.test(a.name))
   const iRi = Boolean(versioni) && eshteMeIRi(versioni, app.getVersion())
   perditesimi = iRi && exe
     ? {
@@ -238,18 +264,23 @@ ipcMain.handle('perditesimi:kontrollo', async () => {
     shenimet: String(d.body || ''),
     madhesia: exe?.size || 0,
     faqja: d.html_url,
-    // Vetëm exe-ja portabël zëvendësohet vetë; në zhvillim hapet faqja e versionit.
-    vetvetiu: Boolean(EXE_PORTABEL_SKEDARI)
+    // Portabli dhe i instaluari përditësohen vetë; në zhvillim hapet faqja e versionit.
+    vetvetiu: Boolean(EXE_PORTABEL_SKEDARI) || I_INSTALUAR
   }
 })
 
 ipcMain.handle('perditesimi:shkarko', async (event) => {
   if (!perditesimi) throw new Error('S\'ka version të ri.')
-  if (!EXE_PORTABEL_SKEDARI) {
+  if (!EXE_PORTABEL_SKEDARI && !I_INSTALUAR) {
     shell.openExternal(perditesimi.faqja)
     return { hapurFaqja: true }
   }
-  const destinacioni = `${EXE_PORTABEL_SKEDARI}.perditesim`
+  let destinacioni = `${EXE_PORTABEL_SKEDARI}.perditesim`
+  if (I_INSTALUAR) {
+    const dosja = path.join(app.getPath('temp'), 'FinanCareLabels-perditesimi')
+    fs.mkdirSync(dosja, { recursive: true })
+    destinacioni = path.join(dosja, `FinanCare Labels Setup ${perditesimi.versioni}.exe`)
+  }
   const r = await net.fetch(perditesimi.url, { headers: { 'User-Agent': 'FinanCareLabels-Updater' } })
   if (!r.ok || !r.body) throw new Error(`Shkarkimi dështoi: ${r.status}`)
   const gjithsej = Number(r.headers.get('content-length')) || perditesimi.madhesia || 0
@@ -291,7 +322,24 @@ ipcMain.handle('perditesimi:shkarko', async (event) => {
 })
 
 ipcMain.handle('perditesimi:instalo', () => {
-  if (!skedariIShkarkuar || !EXE_PORTABEL_SKEDARI || process.platform !== 'win32') return false
+  if (!skedariIShkarkuar || process.platform !== 'win32') return false
+  if (I_INSTALUAR) {
+    // Instaluesi pret pak që programi të mbyllet, instalon në heshtje në të njëjtën dosje dhe e hap përsëri.
+    const thonjeza = (v) => `'${String(v).replace(/'/g, "''")}'`
+    const skripti = [
+      'Start-Sleep -Seconds 2',
+      `Start-Process -FilePath ${thonjeza(skedariIShkarkuar)} -ArgumentList '/S','--updated','--force-run' -Wait`,
+      `Remove-Item -LiteralPath ${thonjeza(skedariIShkarkuar)} -Force -ErrorAction SilentlyContinue`
+    ].join('\n')
+    spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', Buffer.from(skripti, 'utf16le').toString('base64')], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    }).unref()
+    setTimeout(() => app.quit(), 200)
+    return true
+  }
+  if (!EXE_PORTABEL_SKEDARI) return false
   const thonjeza = (v) => `'${String(v).replace(/'/g, "''")}'`
   const skripti = [
     `$exe = ${thonjeza(EXE_PORTABEL_SKEDARI)}`,

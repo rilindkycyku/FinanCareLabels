@@ -6,8 +6,9 @@
       "id": "fillimi",
       "titulli": "1. Fillimi",
       "paragrafet": [
-        "Programi është një exe portabël: e hapni me dy klikime, pa instalim. Pranë exe-së krijohet dosja \"FinanCareLabels-Data\", ku ruhen shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje.",
-        "Hapja e parë e çdo versioni zgjat pak (shfaqet \"Duke u përgatitur herën e parë të këtij versioni\"): programi përgatitet një herë te dosja FinanCareLabels-Data pranë exe-së (nënosja app-<versioni>). Hapjet e tjera janë të shpejta.",
+        "Programi vjen në dy forma: FinanCare Labels Setup (instaluesi) për kompjuterin ku punoni çdo ditë, dhe FinanCare Labels Portable (një exe pa instalim) për USB ose kompjuterët ku s'mund të instaloni. Të dyja kanë të njëjtat funksione.",
+        "Setup: e hapni, zgjidhni dosjen (s'kërkon leje administratori) dhe programi del në Desktop dhe Start. Të dhënat ruhen te %APPDATA%\\FinanCareLabels. Hapet shpejt dhe përditësohet vetë. Nëse keni përdorur portablin, te Cilësimet → Të dhënat klikoni \"Merr të dhënat nga portabli\" dhe zgjidhni dosjen e tij FinanCareLabels-Data.",
+        "Portable: e hapni me dy klikime, pa instalim. Pranë exe-së krijohet dosja \"FinanCareLabels-Data\", ku ruhen shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje. Hapja e parë e çdo versioni zgjat pak (\"Duke u përgatitur herën e parë të këtij versioni\"); hapjet e tjera janë të shpejta.",
         "Lart janë katër faqet: Printimi, Editori i shablloneve, Udhëzuesi (kjo faqe) dhe Cilësimet. Me butonin e hënës/diellit ndërroni temën e çelët/të errët."
       ],
       "hapat": [
@@ -23,16 +24,43 @@
         "Mund të hapni edhe çdo Excel tjetër - eksport nga programi i arkës, lista e furnitorit, CSV ose ODS. Kolonat njihen sipas titujve, si te FinanCare Migrator: p.sh. \"Emertimi\", \"Pershkrimi\", \"Naziv\", \"Description\" për emrin; \"Cmimi\", \"Cmimi shites\", \"MPC\", \"Price\" për çmimin; \"Barcodi\", \"EAN\", \"Barcode\" për barkodin. Rreshti i titujve mund të jetë kudo në 30 rreshtat e parë (p.sh. pas një titulli \"Artikujt ne excel\"). Kur Excel-i s'ka fare tituj, kolonat gjenden sipas përmbajtjes (teksti = emri, numrat 8-13 shifrorë = barkodi, numri me decimale = çmimi)."
       ],
       "tabela": {
-        "koka": ["Kolona", "Kuptimi"],
+        "koka": [
+          "Kolona",
+          "Kuptimi"
+        ],
         "rreshtat": [
-          ["Emertimi", "Emri i produktit (i detyrueshëm)"],
-          ["Cmimi", "Çmimi (i detyrueshëm, ose një nga çmimet e zbritjes)"],
-          ["CmimiZbritje + CmimiRregullt", "Zbritje: i rregullti del i prerë, përqindja llogaritet vetë"],
-          ["Barcodi", "Barkodi; origjina (flamuri) del nga prefiksi GS1"],
-          ["Shifra", "Shifra / kodi i produktit (p.sh. kodi i peshores)"],
-          ["Origjina", "Shteti, kur barkodi është i brendshëm (p.sh. 2700106)"],
-          ["Njesia", "Njësia (kg, l...) - çmimi del si €/kg"],
-          ["Kopje", "Sa etiketa të printohen për produktin (1 kur mungon)"]
+          [
+            "Emertimi",
+            "Emri i produktit (i detyrueshëm)"
+          ],
+          [
+            "Cmimi",
+            "Çmimi (i detyrueshëm, ose një nga çmimet e zbritjes)"
+          ],
+          [
+            "CmimiZbritje + CmimiRregullt",
+            "Zbritje: i rregullti del i prerë, përqindja llogaritet vetë"
+          ],
+          [
+            "Barcodi",
+            "Barkodi; origjina (flamuri) del nga prefiksi GS1"
+          ],
+          [
+            "Shifra",
+            "Shifra / kodi i produktit (p.sh. kodi i peshores)"
+          ],
+          [
+            "Origjina",
+            "Shteti, kur barkodi është i brendshëm (p.sh. 2700106)"
+          ],
+          [
+            "Njesia",
+            "Njësia (kg, l...) - çmimi del si €/kg"
+          ],
+          [
+            "Kopje",
+            "Sa etiketa të printohen për produktin (1 kur mungon)"
+          ]
         ]
       },
       "hapat": [
@@ -111,7 +139,7 @@
       "id": "perditesimi",
       "titulli": "9. Përditësimet",
       "paragrafet": [
-        "Kur kompjuteri ka internet, programi kontrollon vetë nëse ka version të ri në GitHub dhe ju njofton lart. \"Shkarko\" e merr versionin e ri, \"Rinis dhe përditëso\" e mbyll programin, e zëvendëson exe-në me të renë (me të njëjtin emër) dhe e hap përsëri. Dosja FinanCareLabels-Data mbetet e paprekur.",
+        "Kur kompjuteri ka internet, programi kontrollon vetë nëse ka version të ri në GitHub dhe ju njofton lart. \"Shkarko\" e merr versionin e ri, \"Rinis dhe përditëso\" e mbyll programin dhe e përditëson: i instaluari instalohet në heshtje në të njëjtën dosje, portabli e zëvendëson exe-në me të renë (me të njëjtin emër). Pastaj programi hapet vetë; të dhënat mbeten të paprekura.",
         "Kontrolli mund të fiket ose të bëhet me dorë te Cilësimet → Përditësimet. Pas çdo përditësimi shfaqet \"Çka ka të re\"."
       ]
     },
@@ -119,14 +147,35 @@
       "id": "problemet",
       "titulli": "10. Problemet e shpeshta",
       "tabela": {
-        "koka": ["Problemi", "Zgjidhja"],
+        "koka": [
+          "Problemi",
+          "Zgjidhja"
+        ],
         "rreshtat": [
-          ["Kolona e skajit ose rreshti i fundit del i prerë", "Rritni margjinën minimale në 4-5 mm dhe/ose kalibroni printerin."],
-          ["Etiketat s'përputhen me letrën me etiketa ngjitëse", "Kalibroni printerin; kontrolloni hapësirat dhe margjinat sipas letrës."],
-          ["Fleta del më e vogël se A4", "Printoni nga programi (jo nga lexuesi me \"Fit\"); kalibroni shkallën (C)."],
-          ["\"Kolonat s'u njohën\"", "Klikoni \"Lidh kolonat\" dhe lidhni emrin dhe çmimin."],
-          ["Emri del me shkronja të vogla", "Shkurtoni emrin te tabela (vetëm për printim) ose zgjidhni shabllon me më shumë vend për emrin."],
-          ["Flamuri mungon", "Barkodi është i brendshëm (p.sh. 2700...): zgjidhni origjinën te tabela ose shtoni kolonën Origjina."]
+          [
+            "Kolona e skajit ose rreshti i fundit del i prerë",
+            "Rritni margjinën minimale në 4-5 mm dhe/ose kalibroni printerin."
+          ],
+          [
+            "Etiketat s'përputhen me letrën me etiketa ngjitëse",
+            "Kalibroni printerin; kontrolloni hapësirat dhe margjinat sipas letrës."
+          ],
+          [
+            "Fleta del më e vogël se A4",
+            "Printoni nga programi (jo nga lexuesi me \"Fit\"); kalibroni shkallën (C)."
+          ],
+          [
+            "\"Kolonat s'u njohën\"",
+            "Klikoni \"Lidh kolonat\" dhe lidhni emrin dhe çmimin."
+          ],
+          [
+            "Emri del me shkronja të vogla",
+            "Shkurtoni emrin te tabela (vetëm për printim) ose zgjidhni shabllon me më shumë vend për emrin."
+          ],
+          [
+            "Flamuri mungon",
+            "Barkodi është i brendshëm (p.sh. 2700...): zgjidhni origjinën te tabela ose shtoni kolonën Origjina."
+          ]
         ]
       }
     }

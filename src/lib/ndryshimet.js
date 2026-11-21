@@ -5,6 +5,7 @@ export const NDRYSHIMET = [
     versioni: "1.0.2",
     data: "2026-11-22",
     pikat: [
+      ["E re", "Instaluesi (FinanCare Labels Setup): instalohet një herë pa leje administratori, me shkurtore në Desktop dhe Start, hapet shpejt dhe përditësohet vetë në heshtje. Portabli mbetet për USB; \"Merr të dhënat nga portabli\" te Cilësimet i kalon shabllonet dhe cilësimet."],
       ["E re", "Kur fikni barkodin, flamurin ose shtetin, çmimi dhe emri zmadhohen në vendin e lirë (opsioni \"Zmadho çmimin në vendin e lirë\")."],
       ["Rregullim", "Hapja e programit shumë më e shpejtë: programi shpaketohet vetëm herën e parë të çdo versioni, pranë exe-së te FinanCareLabels-Data si te ULM (me dritaren \"Duke u përgatitur\"), jo në çdo hapje; exe-ja më e vogël."],
       ["Rregullim", "Printimi s'humbet më te printeri (s'duhet shtypur \"Printo\" disa herë): punët dërgohen një nga një dhe dritarja e printimit pret derisa driveri ta marrë punën."],
