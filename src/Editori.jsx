@@ -183,7 +183,7 @@ const pershkrimiElementit = (el) => {
   return emri;
 };
 
-function EditoriQmimores({ mesazh, emriBiznesit = "", iNdryshuarRef }) {
+function EditoriQmimores({ mesazh, emriBiznesit = "", iNdryshuarRef, skedariPerImport = null }) {
 
   const [shabllonet, setShabllonet] = useState([]);
   const [poNgarkohet, setPoNgarkohet] = useState(true);
@@ -392,6 +392,13 @@ function EditoriQmimores({ mesazh, emriBiznesit = "", iNdryshuarRef }) {
     }
     return undefined;
   };
+
+  // Shablloni i lëshuar në dritare (drag & drop te App.jsx) importohet si me butonin "Importo".
+  const importoRef = useRef(importo);
+  importoRef.current = importo;
+  useEffect(() => {
+    if (skedariPerImport?.skedari) importoRef.current({ target: { files: [skedariPerImport.skedari], value: "" } });
+  }, [skedariPerImport]);
 
   /* ---------- Ndryshimet e shabllonit ---------- */
 

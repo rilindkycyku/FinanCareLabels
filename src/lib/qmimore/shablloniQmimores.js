@@ -284,7 +284,7 @@ const gjendjaEProduktit = (m, p) => {
       barkodi: String(p.barcode || "").trim(),
       shifra: String(p.code ?? "").trim(),
       njesia: String(p.unit || ""),
-      shteti: m.emriShtetit(p.origin),
+      shteti: m.shfaqShtetin === false ? "" : m.emriShtetit(p.origin),
       data: String(m.tekstet?.data || "").trim() || new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }),
       dyqani: String(m.emriBiznesit || ""),
       viti: String(tani().getFullYear()),
@@ -465,7 +465,7 @@ const vizatoElementin = (m, el, p, g, x, y) => {
       return;
     }
     case "flamur": {
-      if (!p.origin) return;
+      if (!p.origin || m.shfaqFlamurin === false) return;
       const fh = Math.min(h, w / 1.5);
       const fw = fh * 1.5;
       const fx = el.rreshtimi === "right" ? x + w - fw : el.rreshtimi === "center" ? x + (w - fw) / 2 : x;

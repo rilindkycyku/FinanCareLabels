@@ -14,9 +14,29 @@ festive si "Shtyp Çmimet" / "Shabllonet e Çmimores" te FinanCare.
    importi dhe **shkarkimi si skedar `.qmimore.json`** (edhe i shablloneve të gatshme), që hapet edhe te FinanCare.
 3. **Cilësimet** – emri i biznesit (`{dyqani}`) dhe dosja e të dhënave.
 
+4. **Udhëzuesi** – udhëzuesi i plotë brenda programit; i njëjti në Word te `public/FinanCareLabels-Udhezuesi.docx`
+   (rigjenerohet nga `src/lib/udhezuesi.json` me `python tools/udhezuesi_docx.py`).
+
+Excel-i ose CSV-ja hapet edhe duke e **tërhequr në dritare**; shablloni `.qmimore.json` importohet njësoj te Editori.
+
+### Printeri dhe kalibrimi
+
+Te Cilësimet → Printeri: "Printo fletën e kalibrimit", matni A (skaji majtas → korniza, 10 mm), B (skaji lart → korniza,
+10 mm) dhe C (vija, 150 mm). Korrigjimi (zhvendosja X/Y dhe shkalla) ruhet për çdo printer dhe zbatohet te printimi direkt.
+Printimi bëhet në 100%, punët dërgohen një nga një dhe dritarja e printimit mbetet e hapur derisa driveri ta marrë punën.
+
+### Përditësimet
+
+Programi kontrollon `releases/latest` te GitHub (repo publik, pa token). Exe-ja portabël e re shkarkohet pranë asaj
+të vjetrës si `<exe>.perditesim` (verifikohet madhësia dhe SHA-256 kur GitHub e jep), pastaj një skript PowerShell i
+fshehur pret mbylljen, e zëvendëson exe-në me të njëjtin emër dhe e hap përsëri. Në release duhet ngarkuar exe-ja
+portabël (emri përmban "Portable" dhe mbaron me `.exe`). Çka ka të re: `src/lib/ndryshimet.js`.
+
 ### Kolonat e Excel-it
 
-Rreshti i titujve kërkohet në krye të fletës; kolonat njihen sipas emrit:
+Rreshti i titujve kërkohet në 30 rreshtat e parë; kolonat njihen sipas emrit, me sinonime si te FinanCare Migrator
+(`Pershkrimi`, `Naziv`, `Description`, `Cmimi shites`, `MPC`, `Price`, `EAN`, `Barcode`...). Pa tituj, kolonat gjenden
+sipas përmbajtjes. Kur s'njihen, "Lidh kolonat" i lidh me dorë dhe lidhja ruhet sipas titujve për Excel-at e ardhshëm.
 
 | Kolona | Kuptimi |
 | --- | --- |
@@ -42,5 +62,6 @@ npm install
 npm approve-scripts electron esbuild   # npm 11 i bllokon postinstall-et
 npm run electron:dev                   # vite build + electron
 npm run dev                            # vetëm UI në shfletues (pa Excel/printim)
+npm test                               # testet e leximit të Excel-it dhe kalibrimit
 build.bat                              # exe portabël te release\
 ```

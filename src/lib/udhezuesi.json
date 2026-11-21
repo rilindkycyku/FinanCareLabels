@@ -1,0 +1,133 @@
+{
+  "titulli": "FinanCare Labels - Udhëzuesi i përdorimit",
+  "hyrja": "FinanCare Labels printon çmimoret e rafteve (etiketat me emrin, çmimin, barkodin dhe origjinën) nga një Excel, pa internet dhe pa instalim. Ky udhëzues ju çon hap pas hapi nga Excel-i deri te fleta e printuar.",
+  "seksionet": [
+    {
+      "id": "fillimi",
+      "titulli": "1. Fillimi",
+      "paragrafet": [
+        "Programi është një exe portabël: e hapni me dy klikime, pa instalim. Pranë exe-së krijohet dosja \"FinanCareLabels-Data\", ku ruhen shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje.",
+        "Lart janë katër faqet: Printimi, Editori i shablloneve, Udhëzuesi (kjo faqe) dhe Cilësimet. Me butonin e hënës/diellit ndërroni temën e çelët/të errët."
+      ],
+      "hapat": [
+        "Te Cilësimet shënoni emrin e biznesit (del te shabllonet që kanë fushën {dyqani}).",
+        "Te Cilësimet → Printeri kalibroni printerin një herë (shih kapitullin 7), që etiketat të bien saktë në letër."
+      ]
+    },
+    {
+      "id": "exceli",
+      "titulli": "2. Excel-i me çmimet",
+      "paragrafet": [
+        "Mënyra më e lehtë: te Printimi klikoni \"Excel bosh\" (ose \"Me shembuj\"), plotësoni produktet dhe ruajeni. Çdo fletë e Excel-it (Raft, RaftMeZbritje, 9Cop, 4Cop, QmimeFestive...) del si skedë më vete, me shabllonin e sugjeruar.",
+        "Mund të hapni edhe çdo Excel tjetër - eksport nga programi i arkës, lista e furnitorit, CSV ose ODS. Kolonat njihen sipas titujve, si te FinanCare Migrator: p.sh. \"Emertimi\", \"Pershkrimi\", \"Naziv\", \"Description\" për emrin; \"Cmimi\", \"Cmimi shites\", \"MPC\", \"Price\" për çmimin; \"Barcodi\", \"EAN\", \"Barcode\" për barkodin. Rreshti i titujve mund të jetë kudo në 30 rreshtat e parë (p.sh. pas një titulli \"Artikujt ne excel\"). Kur Excel-i s'ka fare tituj, kolonat gjenden sipas përmbajtjes (teksti = emri, numrat 8-13 shifrorë = barkodi, numri me decimale = çmimi)."
+      ],
+      "tabela": {
+        "koka": ["Kolona", "Kuptimi"],
+        "rreshtat": [
+          ["Emertimi", "Emri i produktit (i detyrueshëm)"],
+          ["Cmimi", "Çmimi (i detyrueshëm, ose një nga çmimet e zbritjes)"],
+          ["CmimiZbritje + CmimiRregullt", "Zbritje: i rregullti del i prerë, përqindja llogaritet vetë"],
+          ["Barcodi", "Barkodi; origjina (flamuri) del nga prefiksi GS1"],
+          ["Shifra", "Shifra / kodi i produktit (p.sh. kodi i peshores)"],
+          ["Origjina", "Shteti, kur barkodi është i brendshëm (p.sh. 2700106)"],
+          ["Njesia", "Njësia (kg, l...) - çmimi del si €/kg"],
+          ["Kopje", "Sa etiketa të printohen për produktin (1 kur mungon)"]
+        ]
+      },
+      "hapat": [
+        "Klikoni \"Hap Excel-in\" dhe zgjidhni skedarin - ose thjesht tërhiqeni skedarin nga Windows-i dhe lëshojeni në dritaren e programit.",
+        "Mbi tabelë shfaqet si u njohën kolonat (p.sh. \"Emri i produktit ← C \\\"Emertimi\\\"\"). Nëse diçka s'është në rregull, klikoni \"Lidh kolonat\".",
+        "Te \"Lidh kolonat\" zgjidhni rreshtin e titujve, rreshtin ku nisin produktet dhe për çdo fushë kolonën e saj. Poshtë tabelës shihni sa produkte dalin. \"Ruaj lidhjen\" - lidhja vlen vetë për çdo Excel me të njëjtat tituj (p.sh. eksporti i përjavshëm).",
+        "Ndryshoni Excel-in kur të doni: pasi e ruani dhe ktheheni te programi, lista rilexohet vetë."
+      ]
+    },
+    {
+      "id": "produktet",
+      "titulli": "3. Hapi 1 - Produktet",
+      "hapat": [
+        "Zgjidhni skedën (fletën) e Excel-it.",
+        "Hiqni shenjën te produktet që s'duhen printuar; shenja në krye i zgjedh/heq të gjitha.",
+        "Te kolona \"Kopje\" shënoni sa etiketa për produktin.",
+        "Klikoni një qelizë (emri, barkodi, origjina, çmimi) për ta ndryshuar vetëm për printim - Excel-i s'preket. Enter ruan, Esc anulon; \"Rikthe si në Excel\" i heq ndryshimet.",
+        "\"Shto produkt\" shton një produkt që s'është në Excel; skeda \"Produktet e mia\" punon edhe pa Excel."
+      ]
+    },
+    {
+      "id": "dizajni",
+      "titulli": "4. Hapi 2 - Dizajni",
+      "hapat": [
+        "Zgjidhni kategorinë (Raft, Zbritje, Postera, Festive...) dhe shabllonin; djathtas shihet parapamja me produktin e parë.",
+        "Shablloni ruhet për çdo fletë të Excel-it: herën tjetër është i zgjedhur vetë.",
+        "Shabllonet tuaja (nga Editori) janë te \"Të miat\"."
+      ]
+    },
+    {
+      "id": "opsionet",
+      "titulli": "5. Hapi 3 - Opsionet",
+      "hapat": [
+        "Stili i çmimit: 39⁹³ € (centet lart) ose 39.93 €.",
+        "Fikni ose ndizni: barkodin, simbolin €, flamurin, emrin e shtetit dhe vijat e prerjes. Pa €, pa flamur ose pa shtet çmimi dhe emri dalin më të mëdhenj.",
+        "Orientimi i fletës: Automatik zgjedh portret ose peisazh sipas asaj që nxë më shumë etiketa.",
+        "Hapësira horizontale/vertikale: mm bosh mes etiketave për prerje. Margjina minimale: sa larg skajit të letrës qëndrojnë etiketat. Shumica e printerave s'printojnë 3-5 mm te skaji - kur shihni paralajmërimin, zgjidhni 4-5 mm.",
+        "Rregullimet ruhen për çdo shabllon; \"Rikthe parazgjedhjen e shabllonit\" i kthen siç ishin."
+      ]
+    },
+    {
+      "id": "printimi",
+      "titulli": "6. Hapi 4 - Printimi",
+      "hapat": [
+        "Kontrolloni përmbledhjen (etiketat, faqet, letra). Nëse të njëjtat etiketa janë printuar më parë, programi ju tregon kur, dhe \"Hiqi nga printimi\" i heq.",
+        "\"Gjenero çmimoren\" hap parapamjen e PDF-së. Zgjidhni printerin dhe kopjet, pastaj \"Printo\" - printohet në madhësinë reale (100%), me kalibrimin e printerit.",
+        "\"Ruaj PDF\" e ruan skedarin; \"Hap jashtë\" e hap në lexuesin e PDF-ve. Kur printoni nga lexuesi, zgjidhni \"Madhësia reale / Actual size\", jo \"Fit\"."
+      ]
+    },
+    {
+      "id": "kalibrimi",
+      "titulli": "7. Kalibrimi i printerit",
+      "paragrafet": [
+        "Disa printera e zhvendosin faqen disa milimetra ose e zvogëlojnë pak, ndaj etiketat s'bien saktë edhe kur margjinat në program janë të sakta (p.sh. kolona e majtë pritet). Kalibrimi e korrigjon këtë një herë për çdo printer."
+      ],
+      "hapat": [
+        "Cilësimet → Printeri: zgjidhni printerin dhe klikoni \"Printo fletën e kalibrimit\".",
+        "Me vizore matni në letër: A = nga skaji i majtë i letrës te vija e kornizës (duhet 10 mm), B = nga skaji i sipërm te korniza (duhet 10 mm), C = gjatësia e vijës së gjatë (duhet 150 mm).",
+        "Shënoni A, B, C dhe klikoni \"Llogarit dhe ruaj\".",
+        "Printoni fletën përsëri: A dhe B duhet të dalin 10 mm, C 150 mm. Nëse jo, përsëritni matjen.",
+        "Shenjat e vogla 1-6 mm te skajet e fletës tregojnë sa afër skajit printon printeri: zgjidhni të paktën atë margjinë te Opsionet."
+      ]
+    },
+    {
+      "id": "editori",
+      "titulli": "8. Editori i shablloneve",
+      "hapat": [
+        "Krijoni një shabllon të ri ose kopjoni një të gatshëm.",
+        "Shtoni elemente: tekst (me fusha si {emri}, {shteti}, {barkodi}, {data}, {dyqani}), çmimi, barkodi, kodi QR, flamuri, kuti, vija, vula e zbritjes, imazhe.",
+        "Çdo element mund të shfaqet gjithmonë ose vetëm kur produkti ka/s'ka zbritje.",
+        "Ruani shabllonin; del te Printimi → Dizajni → \"Të miat\".",
+        "Shkarkoni shabllonin si .qmimore.json për ta hapur në një kompjuter tjetër ose te FinanCare; e importoni me \"Importo\" ose duke e tërhequr skedarin në dritare."
+      ]
+    },
+    {
+      "id": "perditesimi",
+      "titulli": "9. Përditësimet",
+      "paragrafet": [
+        "Kur kompjuteri ka internet, programi kontrollon vetë nëse ka version të ri në GitHub dhe ju njofton lart. \"Shkarko\" e merr versionin e ri, \"Rinis dhe përditëso\" e mbyll programin, e zëvendëson exe-në me të renë (me të njëjtin emër) dhe e hap përsëri. Dosja FinanCareLabels-Data mbetet e paprekur.",
+        "Kontrolli mund të fiket ose të bëhet me dorë te Cilësimet → Përditësimet. Pas çdo përditësimi shfaqet \"Çka ka të re\"."
+      ]
+    },
+    {
+      "id": "problemet",
+      "titulli": "10. Problemet e shpeshta",
+      "tabela": {
+        "koka": ["Problemi", "Zgjidhja"],
+        "rreshtat": [
+          ["Kolona e skajit ose rreshti i fundit del i prerë", "Rritni margjinën minimale në 4-5 mm dhe/ose kalibroni printerin."],
+          ["Etiketat s'përputhen me letrën me etiketa ngjitëse", "Kalibroni printerin; kontrolloni hapësirat dhe margjinat sipas letrës."],
+          ["Fleta del më e vogël se A4", "Printoni nga programi (jo nga lexuesi me \"Fit\"); kalibroni shkallën (C)."],
+          ["\"Kolonat s'u njohën\"", "Klikoni \"Lidh kolonat\" dhe lidhni emrin dhe çmimin."],
+          ["Emri del me shkronja të vogla", "Shkurtoni emrin te tabela (vetëm për printim) ose zgjidhni shabllon me më shumë vend për emrin."],
+          ["Flamuri mungon", "Barkodi është i brendshëm (p.sh. 2700...): zgjidhni origjinën te tabela ose shtoni kolonën Origjina."]
+        ]
+      }
+    }
+  ]
+}

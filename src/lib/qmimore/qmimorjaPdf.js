@@ -185,6 +185,11 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     hapesiraH = 0,
     hapesiraV = 0,
     shfaqEuro = true,
+    // Flamuri dhe emri i shtetit (origjina) - si "Shfaq barkodin", fiken për të gjitha etiketat.
+    shfaqFlamurin = true,
+    shfaqShtetin = true,
+    // Vijat e prerjes: null = sipas shabllonit, true/false = gjithmonë / kurrë.
+    vijatEPrerjes = null,
     orientimi = "auto",
     margjina = SIGURIA_SKAJIT,
   } = opsionet;
@@ -275,7 +280,9 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
   };
 
   const pershtatTekstin = (teksti, maxW, maxH, { maxFs = 72, minFs = 5, maxRreshta = 2, lh = 1.1, stili = "bold" } = {}) => {
-    const t = String(teksti || "").trim();
+    // Hapësirat e dyfishta ("Sallam EXTRA  350GR"), tab-at dhe rreshtat e rinj bëhen një hapësirë: përndryshe teksti i
+    // ndarë s'përputhet kurrë me fjalët dhe emri del me shkronjën më të vogël.
+    const t = String(teksti || "").replace(/\s+/g, " ").trim();
     const ndaj = (fs) => {
       doc.setFont(FONTI, stili);
       doc.setFontSize(fs);
@@ -504,6 +511,8 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     tekstet,
     emriBiznesit,
     shfaqBarkodin,
+    shfaqFlamurin,
+    shfaqShtetin,
     merrRabatin,
     merrQmiminMeZbritje,
     kaQmimShumice,
@@ -549,6 +558,7 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
   const { kolonat, perFaqe, gH, gV } = plani;
   const xFillimi = plani.anash;
   const yFillimi = plani.lartPoshte;
+  const meVija = vijatEPrerjes == null ? shablloni.vijaPrerjes : Boolean(vijatEPrerjes);
   products.forEach((product, i) => {
     if (i > 0 && i % perFaqe === 0) {
       doc.addPage(plani.orientimi === "l" ? [297, 210] : [210, 297], plani.orientimi);
@@ -558,7 +568,7 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     const x = xFillimi + (n % kolonat) * (w + gH);
     const y = yFillimi + Math.floor(n / kolonat) * (h + gV);
     vizatoEtiketen(product, x, y);
-    if (shablloni.vijaPrerjes) korniza(x, y, w, h, 0.3, NGJYRA.zi); // vijë prerjeje e zezë e fortë
+    if (meVija) korniza(x, y, w, h, 0.3, NGJYRA.zi); // vijë prerjeje e zezë e fortë
   });
 
   return doc;
