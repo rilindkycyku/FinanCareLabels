@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Button, Form, Modal, ProgressBar, Spinner, Toast, ToastContainer } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowsRotate, faBookOpen, faCircleDown, faFileImport, faFolderOpen, faGear, faGift, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
 import Printimi from "./Printimi";
 import ShiritiITitullit from "./components/ShiritiITitullit";
-import Editori from "./Editori";
-import Udhezuesi from "./Udhezuesi";
+// Editori dhe Udhëzuesi ngarkohen kur hapen: hapja e programit lexon vetëm Printimin.
+const Editori = lazy(() => import("./Editori"));
+const Udhezuesi = lazy(() => import("./Udhezuesi"));
 import KalibrimiPrinterit from "./components/KalibrimiPrinterit";
 import { NDRYSHIMET, krahasoVersionet, ndryshimetMes } from "./lib/ndryshimet";
 import { eshteDesktop, lexoCilesimet, ruajCilesimet } from "./lib/ruajtja";
@@ -270,10 +271,12 @@ export default function App() {
 
       <main className="lb-permbajtja">
         {faqja === "printimi" && <Printimi cilesimet={cilesimet} ndryshoCilesimet={ndryshoCilesimet} mesazh={mesazh} hapEditorin={() => shko("editori")} />}
-        {faqja === "editori" && (
-          <Editori mesazh={mesazh} emriBiznesit={cilesimet.emriBiznesit} iNdryshuarRef={editoriNdryshuar} skedariPerImport={shablloniILeshuar} />
-        )}
-        {faqja === "udhezuesi" && <Udhezuesi />}
+        <Suspense fallback={<Spinner animation="border" size="sm" className="m-4" />}>
+          {faqja === "editori" && (
+            <Editori mesazh={mesazh} emriBiznesit={cilesimet.emriBiznesit} iNdryshuarRef={editoriNdryshuar} skedariPerImport={shablloniILeshuar} />
+          )}
+          {faqja === "udhezuesi" && <Udhezuesi />}
+        </Suspense>
         {faqja === "cilesimet" && (
           <div className="ql-seksioni lb-cilesimet">
             <div className="ql-titulli-seksionit">Biznesi</div>

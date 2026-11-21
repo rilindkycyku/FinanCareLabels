@@ -11,7 +11,7 @@
     "build": "vite build",
     "start": "electron .",
     "electron:dev": "vite build && electron .",
-    "dist": "vite build && electron-builder --win portable",
+    "dist": "vite build && node scripts/nisesi-portabel.mjs && electron-builder --win portable",
     "test": "node scripts/test.mjs"
   },
   "devDependencies": {
@@ -36,7 +36,7 @@
   "build": {
     "appId": "com.rilindkycyku.financarelabels",
     "productName": "FinanCare Labels",
-    "compression": "store",
+    "compression": "normal",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -52,8 +52,12 @@
       ],
       "icon": "build/icon.png"
     },
+    "electronLanguages": [
+      "en-US"
+    ],
     "portable": {
-      "artifactName": "${productName} Portable ${version}.${ext}"
+      "artifactName": "${productName} Portable ${version}.${ext}",
+      "splashImage": "build/splash.bmp"
     }
   }
 }

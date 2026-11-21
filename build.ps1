@@ -161,6 +161,9 @@ try {
     # ── HAPI 4: PAKETIMI I PORTABLE ───────────────────────
     $swStep = [System.Diagnostics.Stopwatch]::StartNew()
     Draw-ProgressBar -Percent 60 -StepText "HAPI 4: Paketimi i Portable"
+    # Nisesi yne portabel: programi shpaketohet vetem heren e pare te cdo versioni (jo ne cdo hapje).
+    node scripts\nisesi-portabel.mjs
+    if ($LASTEXITCODE -ne 0) { throw "Nisesi portabel nuk u vendos" }
     npx electron-builder --win portable
     if ($LASTEXITCODE -ne 0) { throw "Paketimi Portable deshtoi" }
     Show-Success "Portable u krijua me sukses!" $swStep

@@ -5,6 +5,8 @@ export const NDRYSHIMET = [
     versioni: "1.0.2",
     data: "2026-11-22",
     pikat: [
+      ["Rregullim", "Hapja e programit shumë më e shpejtë: programi shpaketohet vetëm herën e parë të çdo versioni (me dritaren \"Duke u përgatitur\"), jo në çdo hapje; exe-ja më e vogël."],
+      ["Rregullim", "Printimi s'humbet më te printeri (s'duhet shtypur \"Printo\" disa herë): punët dërgohen një nga një dhe dritarja e printimit pret derisa driveri ta marrë punën."],
       ["E re", "Kalibrimi i printerit (Cilësimet → Printeri): fleta e kalibrimit, matjet me vizore dhe korrigjimi i zhvendosjes e i shkallës për çdo printer - etiketat bien në vend edhe kur driveri e zhvendos ose e zvogëlon faqen."],
       ["E re", "Opsionet e etiketës: fik/ndiz flamurin, emrin e shtetit dhe vijat e prerjes, krahas barkodit dhe simbolit €."],
       ["E re", "Excel-at që s'janë shablloni ynë njihen sipas titujve (si te FinanCare Migrator: Emertimi, Naziv, Description, Cmimi shites, MPC, EAN...), edhe pa tituj sipas përmbajtjes; \"Lidh kolonat\" për t'i lidhur me dorë - lidhja ruhet për herët e tjera."],

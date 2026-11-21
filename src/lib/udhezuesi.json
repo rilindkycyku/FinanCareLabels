@@ -7,6 +7,7 @@
       "titulli": "1. Fillimi",
       "paragrafet": [
         "Programi është një exe portabël: e hapni me dy klikime, pa instalim. Pranë exe-së krijohet dosja \"FinanCareLabels-Data\", ku ruhen shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje.",
+        "Hapja e parë e çdo versioni zgjat pak (shfaqet \"Duke u përgatitur herën e parë të këtij versioni\"): programi përgatitet një herë te %LOCALAPPDATA%\\FinanCareLabels. Hapjet e tjera janë të shpejta.",
         "Lart janë katër faqet: Printimi, Editori i shablloneve, Udhëzuesi (kjo faqe) dhe Cilësimet. Me butonin e hënës/diellit ndërroni temën e çelët/të errët."
       ],
       "hapat": [
