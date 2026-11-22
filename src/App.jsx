@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Button, Form, Modal, ProgressBar, Spinner, Toast, ToastContainer } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowsRotate, faBookOpen, faCircleDown, faFileImport, faFolderOpen, faGear, faGift, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
+import { faArrowsRotate, faBookOpen, faCircleDown, faDesktop, faXmark, faFileImport, faFolderOpen, faGear, faGift, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
 import Printimi from "./Printimi";
 import ShiritiITitullit from "./components/ShiritiITitullit";
 // Editori dhe Udhëzuesi ngarkohen kur hapen: hapja e programit lexon vetëm Printimin.
@@ -9,6 +9,7 @@ const Editori = lazy(() => import("./Editori"));
 const Udhezuesi = lazy(() => import("./Udhezuesi"));
 import KalibrimiPrinterit from "./components/KalibrimiPrinterit";
 import { NDRYSHIMET, krahasoVersionet, ndryshimetMes } from "./lib/ndryshimet";
+import { eshteCelular } from "./lib/shfletuesi";
 import { eshteDesktop, lexoCilesimet, ruajCilesimet } from "./lib/ruajtja";
 
 const FAQET = [
@@ -24,6 +25,18 @@ const EXCEL_RE = /\.(xlsx|xlsm|xls|ods|csv)$/i;
 const SHABLLON_RE = /\.json$/i;
 const madhesia = (b) => `${(b / 1024 / 1024).toFixed(0)} MB`;
 
+// Versioni në shfletues e fton përdoruesin te aplikacioni për Windows (Setup / Portable te GitHub Releases).
+const SHKARKIMI_DESKTOP = "https://github.com/rilindkycyku/FinanCareLabels/releases/latest";
+const PERPARESITE_E_DESKTOPIT = "printim direkt te printeri i zgjedhur me kalibrim të plotë, Excel-i që rilexohet vetë pasi e ruani, dhe punon pa shfletues";
+const CELESI_I_NJOFTIMIT = "financare-labels:desktop-njoftimi-hequr";
+const njoftimiIHequr = () => {
+  try {
+    return localStorage.getItem(CELESI_I_NJOFTIMIT) === "1";
+  } catch {
+    return false;
+  }
+};
+
 export default function App() {
   const [faqja, setFaqja] = useState("printimi");
   const [cilesimet, setCilesimet] = useState(null);
@@ -34,11 +47,23 @@ export default function App() {
   const editoriNdryshuar = useRef(false);
   // Shablloni .qmimore.json i lëshuar në dritare, për importin te Editori.
   const [shablloniILeshuar, setShablloniILeshuar] = useState(null);
+  // Shfletuesi: Excel-i i lëshuar në dritare (s'ka shteg skedari) shkon te Printimi si File.
+  const [excelILeshuar, setExcelILeshuar] = useState(null);
   const [mbiDritare, setMbiDritare] = useState(false);
   const [ndryshimet, setNdryshimet] = useState(null); // lista e versioneve për "Çka ka të re"
   // Përditësimi: { versioni, shenimet, madhesia, vetvetiu, gjendja: "gati" | "shkarkim" | "shkarkuar" | "gabim", progresi, gabimi }
   const [perditesimi, setPerditesimi] = useState(null);
   const [kontrolli, setKontrolli] = useState(""); // "" | "duke" | teksti i rezultatit (Cilësimet)
+  // Shfletuesi në kompjuter: njoftimi "Shkarko për Windows" (fshihet me ×, mbahet mend në këtë pajisje).
+  const [njoftimiDesktop, setNjoftimiDesktop] = useState(() => !eshteDesktop && !eshteCelular() && !njoftimiIHequr());
+  const hiqNjoftimin = () => {
+    setNjoftimiDesktop(false);
+    try {
+      localStorage.setItem(CELESI_I_NJOFTIMIT, "1");
+    } catch {
+      /* s'ka rëndësi */
+    }
+  };
 
   useEffect(() => {
     lexoCilesimet().then(setCilesimet);
@@ -146,6 +171,12 @@ export default function App() {
       setMbiDritare(false);
       const skedari = e.dataTransfer.files?.[0];
       if (!skedari) return;
+      if (EXCEL_RE.test(skedari.name) && !eshteDesktop) {
+        if (faqjaRef.current === "editori" && editoriNdryshuar.current) return mesazh("danger", "Ruani shabllonin në editor, pastaj lëshoni Excel-in.");
+        setFaqja("printimi");
+        setExcelILeshuar({ skedari, id: Date.now() });
+        return undefined;
+      }
       if (EXCEL_RE.test(skedari.name)) {
         const shtegu = eshteDesktop ? window.labels.shteguISkedarit(skedari) : "";
         if (!shtegu) return mesazh("danger", "Skedari s'u hap - provoni me \"Hap Excel-in\".");
@@ -209,7 +240,9 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="lb-offline">Pa internet · {cilesimet.emriBiznesit || "pa emër biznesi"}</div>
+        <div className="lb-offline">
+          {eshteDesktop ? "Pa internet" : "Në shfletues · të dhënat mbeten në këtë pajisje"} · {cilesimet.emriBiznesit || "pa emër biznesi"}
+        </div>
         <button
           type="button"
           className="lb-tema-btn"
@@ -220,6 +253,22 @@ export default function App() {
           <FontAwesomeIcon icon={tema === "dark" ? faSun : faMoon} />
         </button>
       </header>
+
+      {njoftimiDesktop && (
+        <div className="lb-perditesimi lb-desktop-njoftimi">
+          <FontAwesomeIcon icon={faDesktop} className="text-success" />
+          <span>
+            <b>FinanCare Labels për Windows</b> është më i mirë për punën e përditshme: {PERPARESITE_E_DESKTOPIT}.
+          </span>
+          <a className="btn btn-sm btn-save text-nowrap" href={SHKARKIMI_DESKTOP} target="_blank" rel="noopener noreferrer">
+            <FontAwesomeIcon icon={faCircleDown} className="me-2" />
+            Shkarko
+          </a>
+          <button type="button" className="btn btn-link btn-sm p-0 ms-auto text-white-50" title="Mos e shfaq më" aria-label="Mos e shfaq më" onClick={hiqNjoftimin}>
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+      )}
 
       {perditesimi && (
         <div className="lb-perditesimi">
@@ -274,7 +323,7 @@ export default function App() {
       )}
 
       <main className="lb-permbajtja">
-        {faqja === "printimi" && <Printimi cilesimet={cilesimet} ndryshoCilesimet={ndryshoCilesimet} mesazh={mesazh} hapEditorin={() => shko("editori")} />}
+        {faqja === "printimi" && <Printimi cilesimet={cilesimet} ndryshoCilesimet={ndryshoCilesimet} mesazh={mesazh} hapEditorin={() => shko("editori")} excelILeshuar={excelILeshuar} />}
         <Suspense fallback={<Spinner animation="border" size="sm" className="m-4" />}>
           {faqja === "editori" && (
             <Editori mesazh={mesazh} emriBiznesit={cilesimet.emriBiznesit} iNdryshuarRef={editoriNdryshuar} skedariPerImport={shablloniILeshuar} />
@@ -296,6 +345,19 @@ export default function App() {
                 <option value="dark">E errët</option>
               </Form.Select>
             </Form.Group>
+            {!eshteDesktop && (
+              <>
+                <div className="ql-titulli-seksionit mt-4">Aplikacioni për Windows</div>
+                <div className="text-white-50 small mb-2">
+                  Për punën e përditshme në kompjuter, shkarkoni FinanCare Labels për Windows: {PERPARESITE_E_DESKTOPIT}. "Setup" instalohet (pa leje
+                  administratori), "Portable" punon pa instalim nga USB. Shabllonet i merrni me shkarkimin e tyre te Editori.
+                </div>
+                <a className="btn btn-sm btn-save" href={SHKARKIMI_DESKTOP} target="_blank" rel="noopener noreferrer">
+                  <FontAwesomeIcon icon={faDesktop} className="me-2" />
+                  Shkarko për Windows
+                </a>
+              </>
+            )}
             <div className="ql-titulli-seksionit mt-4">Printeri</div>
             <KalibrimiPrinterit kalibrimet={cilesimet.kalibrimet} ndrysho={ndryshoCilesimet} mesazh={mesazh} />
             <div className="ql-titulli-seksionit mt-4">Përditësimet</div>
@@ -303,6 +365,8 @@ export default function App() {
               <span>
                 Versioni <Badge bg="success">{VERSIONI || "-"}</Badge>
               </span>
+              {!eshteDesktop && <span className="small text-white-50">Versioni në shfletues përditësohet vetë - gjithmonë i fundit.</span>}
+              {eshteDesktop && (
               <Form.Check
                 type="switch"
                 id="lb-perditesimet"
@@ -311,6 +375,7 @@ export default function App() {
                 checked={kontrolloAuto}
                 onChange={(e) => ndryshoCilesimet({ kontrolloPerditesimet: e.target.checked })}
               />
+              )}
               {eshteDesktop && (
                 <Button size="sm" variant="secondary" className="btn-cancel" disabled={kontrolli === "duke"} onClick={() => kontrollo(true)}>
                   {kontrolli === "duke" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faArrowsRotate} className="me-2" />}
@@ -325,11 +390,21 @@ export default function App() {
             {kontrolli && kontrolli !== "duke" && <div className="small text-white-50 mt-2">{kontrolli}</div>}
             <div className="ql-titulli-seksionit mt-4">Të dhënat</div>
             <div className="text-white-50 small mb-2">
+              {!eshteDesktop ? (
+                <>
+                  Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë shfletues, në këtë pajisje
+                  (jo në internet). Për t'i marrë në një pajisje tjetër, shkarkoni shabllonet te Editori dhe importojini atje. Pastrimi i të
+                  dhënave të shfletuesit i fshin.
+                </>
+              ) : (
+                <>
               Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë dosje
               {menyra === "instaluar"
                 ? " (programi i instaluar). Kur kaloni nga versioni portabël, merrni të dhënat e tij me butonin më poshtë."
                 : ", pranë exe-së portabël. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje."}{" "}
               Nuk dërgohet asgjë në internet.
+                </>
+              )}
             </div>
             <div className="d-flex align-items-center gap-2">
               <code className="text-info">{dosja || "localStorage (shfletuesi)"}</code>
@@ -375,7 +450,7 @@ export default function App() {
         </div>
       )}
 
-      <Modal show={Boolean(ndryshimet)} onHide={() => setNdryshimet(null)} centered size="lg" className="sp-modal">
+      <Modal show={Boolean(ndryshimet)} onHide={() => setNdryshimet(null)} centered size="lg" fullscreen="sm-down" className="sp-modal">
         <Modal.Header closeButton>
           <Modal.Title>
             <FontAwesomeIcon icon={faGift} className="me-2 text-success" />

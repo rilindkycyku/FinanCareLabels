@@ -58,7 +58,7 @@ export default function LidhKolonat({ fleta, kaHarteTeRuajtur, onRuaj, onHiq, on
   const ruaj = () => onRuaj(celesiIHartes(fleta.emri, { rreshti }, mostra), { fillimi, kolonat });
 
   return (
-    <Modal show={Boolean(fleta)} onHide={onHide} size="xl" centered className="sp-modal">
+    <Modal show={Boolean(fleta)} onHide={onHide} size="xl" centered fullscreen="md-down" className="sp-modal">
       <Modal.Header closeButton>
         <Modal.Title>
           <FontAwesomeIcon icon={faTableColumns} className="me-2 text-info" />

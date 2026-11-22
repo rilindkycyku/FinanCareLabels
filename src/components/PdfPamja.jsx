@@ -5,6 +5,7 @@ import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinu
 import { pdfjsLib } from "../lib/pdfjs";
 import { eshteDesktop } from "../lib/ruajtja";
 import { kaKalibrim, kalibrimiI, pershkrimiKalibrimit } from "../lib/kalibrimi";
+import { PRINTERI_I_SHFLETUESIT, eshteCelular, printoNeShfletues } from "../lib/shfletuesi";
 
 const PT_NE_MM = 25.4 / 72;
 // Hapat e zoom-it te dritarja e PDF-së (1 = madhësia reale e letrës).
@@ -203,6 +204,19 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
     );
   };
 
+  // Shfletuesi: dritarja e printimit e shfletuesit (në celular PDF-ja në skedë të re). Korrigjimi i printerit është
+  // tashmë në PDF.
+  const printoWeb = async () => {
+    setDuke("printo");
+    try {
+      const r = await printoNeShfletues(pdf.blob);
+      if (r === "bllokuar") onMesazh?.("danger", "Shfletuesi e bllokoi skedën e re - lejoni dritaret (pop-up) ose përdorni \"Ruaj PDF\".");
+      else onUKrye?.("printim");
+    } finally {
+      setDuke(null);
+    }
+  };
+
   const printo = async () => {
     setDuke("printo");
     try {
@@ -264,13 +278,25 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
   };
 
   return (
-    <Modal show={Boolean(pdf)} onHide={onHide} size="xl" centered className="sp-modal">
+    <Modal show={Boolean(pdf)} onHide={onHide} size="xl" centered fullscreen="md-down" className="sp-modal">
       <Modal.Header closeButton>
         <Modal.Title>{titulli}</Modal.Title>
       </Modal.Header>
       <Modal.Body className="pdf-pamja">
         {pdf && <PdfKanvasi blob={pdf.blob} zoom={zoom} gjeresia={zoom && zoom > 1 ? Math.round(900 * Math.min(zoom, 2.5)) : 900} />}
       </Modal.Body>
+      {!eshteDesktop && (
+        <div className="pdf-printimi small text-white-50">
+          <div>
+            {eshteCelular()
+              ? "\"Printo\" e hap PDF-në: printojeni ose ndajeni prej aty (p.sh. te printeri Wi-Fi). Zgjidhni A4 dhe madhësinë reale (100%), jo \"Fit\"."
+              : "Te dritarja e printimit zgjidhni: Margjinat - Asnjë (None), Shkalla - 100% / Madhësia reale, jo \"Fit to page\"."}
+            {kaKalibrim(kalibrimiI(kalibrimet, PRINTERI_I_SHFLETUESIT)) && (
+              <span className="text-info"> Kalibrimi: {pershkrimiKalibrimit(kalibrimiI(kalibrimet, PRINTERI_I_SHFLETUESIT))}.</span>
+            )}
+          </div>
+        </div>
+      )}
       {eshteDesktop && (
         <div className="pdf-printimi">
           <Form.Group className="pdf-printimi-printeri">
@@ -339,6 +365,12 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
           {duke === "ruaj" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faFloppyDisk} className="me-2" />}
           Ruaj PDF
         </Button>
+        {!eshteDesktop && (
+          <Button className="btn-save px-4" disabled={Boolean(duke)} onClick={printoWeb}>
+            {duke === "printo" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}
+            Printo
+          </Button>
+        )}
         {eshteDesktop && (
           <Button className="btn-save px-4" disabled={Boolean(duke)} onClick={printo}>
             {duke === "printo" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}

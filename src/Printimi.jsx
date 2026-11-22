@@ -7,6 +7,8 @@ import LidhKolonat from "./components/LidhKolonat";
 import { FUSHAT, celesiIHartes, lexoExcelin, meNdryshime, shablloniISugjeruar, shkronjaEKolones } from "./lib/excel";
 import { opsionetEOrigjines } from "./lib/qmimore/origjina";
 import { eshteDesktop, lexoProduktet, listaEShablloneve, ruajProduktet } from "./lib/ruajtja";
+import { PRINTERI_I_SHFLETUESIT, fshiExcelin, lexoExcelinERuajtur, ruajExcelin } from "./lib/shfletuesi";
+import { kalibrimiI } from "./lib/kalibrimi";
 import { dataShqip, gjurmetEPunes, indeksoHistorikun, lexoHistorikun, regjistroPunen } from "./lib/historiku";
 import { normalizoShabllonin, pergatitImazhet, pershkrimiLetres, rrjetaEShabllonit, shablloniKaZbritje, shablloniTermik } from "./lib/qmimore/shablloniQmimores";
 import { KATEGORITE_E_SHABLLONEVE, SHABLLONET_E_GATSHME, nenkategoriteE } from "./lib/qmimore/shabllonetEGatshme";
@@ -82,7 +84,7 @@ const HAPAT = [
   ["Printimi", "Kontrolli dhe PDF-ja"],
 ];
 
-export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEditorin }) {
+export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEditorin, excelILeshuar = null }) {
   const [excel, setExcel] = useState(null); // { fletet } | null
   const [poLexohet, setPoLexohet] = useState(false);
   const [gabimiExcel, setGabimiExcel] = useState("");
@@ -110,7 +112,13 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const [nenTabi, setNenTabi] = useState("");
   const [hapi, setHapi] = useState(0);
 
-  const skedari = cilesimet.skedariExcel;
+  // Në shfletues (ueb / celular) s'ka shteg skedari: Excel-i zgjidhet ose lëshohet, bajtet mbahen në IndexedDB.
+  const [webExcel, setWebExcel] = useState(null); // { emri, bajtet, koha }
+  const webExcelRef = useRef(null);
+  webExcelRef.current = webExcel;
+  const skedari = eshteDesktop ? cilesimet.skedariExcel : webExcel?.emri || "";
+  const emriSkedarit = skedari ? skedari.split(/[\\/]/).pop() : "";
+  const inputiExcel = useRef(null);
   // Lidhjet e kolonave të ruajtura me dorë ("Lidh kolonat"), për Excel-at që s'janë shablloni ynë.
   const hartat = cilesimet.hartatEKolonave || BOSH;
   const hartatRef = useRef(hartat);
@@ -121,10 +129,10 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
 
   const lexoSkedarin = useCallback(
     async (shtegu, { heshtur = false } = {}) => {
-      if (!shtegu || !eshteDesktop) return;
+      if (!shtegu) return;
       if (!heshtur) setPoLexohet(true);
       try {
-        const bajtet = await window.labels.lexoExcel(shtegu);
+        const bajtet = eshteDesktop ? await window.labels.lexoExcel(shtegu) : webExcelRef.current?.bajtet;
         if (!bajtet) throw new Error("Skedari nuk u gjet. Zgjidheni përsëri.");
         if (bajtet.gabim) throw new Error(bajtet.gabim);
         const iRi = lexoExcelin(bajtet, hartatRef.current);
@@ -144,9 +152,31 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     []
   );
 
+  const webKoha = webExcel?.koha;
   useEffect(() => {
     lexoSkedarin(skedari);
-  }, [skedari, lexoSkedarin]);
+  }, [skedari, webKoha, lexoSkedarin]);
+
+  // Shfletuesi: Excel-i i fundit rikthehet pas rifreskimit të faqes.
+  useEffect(() => {
+    if (eshteDesktop) return;
+    lexoExcelinERuajtur().then((r) => r?.bajtet && setWebExcel((x) => x || r));
+  }, []);
+  const hapSkedarinWeb = useCallback(async (skedariI) => {
+    if (!skedariI) return;
+    if (!/\.(xlsx|xlsm|xls|ods|csv)$/i.test(skedariI.name)) {
+      setGabimiExcel("Zgjidhni një Excel (xlsx, xls, ods) ose CSV.");
+      return;
+    }
+    const bajtet = new Uint8Array(await skedariI.arrayBuffer());
+    setTeHequrat({});
+    setWebExcel({ emri: skedariI.name, bajtet, koha: Date.now() });
+    ruajExcelin(skedariI.name, bajtet);
+  }, []);
+  // Excel-i i lëshuar në dritare (App.jsx) në shfletues.
+  useEffect(() => {
+    if (excelILeshuar?.skedari && !eshteDesktop) hapSkedarinWeb(excelILeshuar.skedari);
+  }, [excelILeshuar, hapSkedarinWeb]);
   // Lidhja e re e kolonave: i njëjti Excel rilexohet me të.
   const hartatEPara = useRef(hartat);
   useEffect(() => {
@@ -168,13 +198,14 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
 
   // Kthimi nga Excel-i (pas ruajtjes) e rilexon vetë listën.
   useEffect(() => {
-    if (!skedari) return undefined;
+    if (!skedari || !eshteDesktop) return undefined;
     const neFokus = () => lexoSkedarin(skedari, { heshtur: true });
     window.addEventListener("focus", neFokus);
     return () => window.removeEventListener("focus", neFokus);
   }, [skedari, lexoSkedarin]);
 
   const zgjidhSkedarin = async () => {
+    if (!eshteDesktop) return inputiExcel.current?.click();
     const s = await window.labels.zgjidhExcel();
     if (!s) return;
     setTeHequrat({});
@@ -382,6 +413,10 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const pastroGjithcka = () => {
     setPastrimi(false);
     ndryshoCilesimet({ skedariExcel: "" });
+    if (!eshteDesktop) {
+      setWebExcel(null);
+      fshiExcelin();
+    }
     setExcel(null);
     setGabimiExcel("");
     setTeShtuarat({});
@@ -506,8 +541,10 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       hapesiraV: Number(rregullimi.hapesiraV) || 0,
       orientimi: rregullimi.orientimi || "auto",
       margjina: Number(rregullimi.margjina) || 0,
+      // Shfletuesi: korrigjimi i printerit futet në PDF (në desktop e bën printimi direkt).
+      ...(eshteDesktop ? {} : { zhvendosjaX: kalibrimiI(cilesimet.kalibrimet, PRINTERI_I_SHFLETUESIT).x, zhvendosjaY: kalibrimiI(cilesimet.kalibrimet, PRINTERI_I_SHFLETUESIT).y }),
     }),
-    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
+    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, cilesimet.kalibrimet, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
   );
 
   /* ---------- Historiku i printimeve: e njëjta çmimore s'printohet dy herë pa e ditur ---------- */
@@ -652,7 +689,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
           <div className="lb-rail-foot">
             <span className="lb-rail-label">Burimi</span>
             <b className="text-truncate" title={skedari || ""}>
-              {skedari ? skedari.split(/[\\/]/).pop() : "Pa Excel"}
+              {emriSkedarit || "Pa Excel"}
             </b>
             <span className="text-white-50 small text-truncate">
               Fleta "{fletaAktive}" · {produktetPerPrintim.length} etiketa
@@ -670,14 +707,24 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
         <div className="lb-excel-emri">
           {skedari ? (
             <>
-              <div className="fw-semibold">{skedari.split(/[\\/]/).pop()}</div>
-              <div className="text-white-50 small text-truncate">{skedari}</div>
+              <div className="fw-semibold">{emriSkedarit}</div>
+              <div className="text-white-50 small text-truncate">{eshteDesktop ? skedari : "Ruhet në këtë pajisje - zgjidheni përsëri pasi ta ndryshoni"}</div>
             </>
           ) : (
             <div className="text-white-50">Zgjidhni Excel-in me çmimet (p.sh. QmimePerRaft.xlsx).</div>
           )}
         </div>
-        <Button size="sm" className="btn-save" onClick={zgjidhSkedarin} disabled={!eshteDesktop}>
+        <input
+          ref={inputiExcel}
+          type="file"
+          hidden
+          accept=".xlsx,.xls,.xlsm,.ods,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+          onChange={(e) => {
+            hapSkedarinWeb(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+        <Button size="sm" className="btn-save" onClick={zgjidhSkedarin}>
           <FontAwesomeIcon icon={faFolderOpen} className="me-2" />
           {skedari ? "Ndrysho" : "Hap Excel-in"}
         </Button>
@@ -695,7 +742,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
             Pastro
           </Button>
         )}
-        {skedari && (
+        {skedari && eshteDesktop && (
           <>
             <Button variant="secondary" size="sm" className="btn-cancel" title="Rilexo (pasi e keni ruajtur në Excel)" onClick={() => lexoSkedarin(skedari)}>
               <FontAwesomeIcon icon={faArrowsRotate} />
@@ -707,7 +754,6 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
           </>
         )}
       </div>
-      {!eshteDesktop && <div className="ql-shenim">Leximi i Excel-it punon vetëm në aplikacionin desktop.</div>}
       {poLexohet && (
         <div className="text-white-50 small my-3">
           <Spinner size="sm" animation="border" className="me-2" /> Duke lexuar Excel-in...
@@ -1250,7 +1296,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
         </Modal.Header>
         <Modal.Body>
           <p className="mb-2">
-            Aplikacioni kthehet si në fillim, pa Excel{skedari ? <> - mbyllet <strong>{skedari.split(/[\\/]/).pop()}</strong></> : ""}.
+            Aplikacioni kthehet si në fillim, pa Excel{skedari ? <> - mbyllet <strong>{emriSkedarit}</strong></> : ""}.
             {kaShtuaraOseNdryshime && <> Produktet e shtuara këtu, ndryshimet dhe kopjet <strong>fshihen</strong>.</>}
           </p>
           <div className="text-white-50 small">Skedari i Excel-it në disk s'preket - e hapni përsëri kur të doni.</div>
