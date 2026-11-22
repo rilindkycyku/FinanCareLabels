@@ -1,0 +1,60 @@
+# Release-i: tag-u "v<versioni>" (p.sh. v1.0.2) ndërton në Windows instaluesin (Setup) dhe portablin, kalon testet dhe
+# krijon GitHub Release-in me të dy exe-të dhe shënimet nga "Çka ka të re" (src/lib/ndryshimet.js). Programi i instaluar
+# dhe portabli e gjejnë versionin e ri vetë nga releases/latest.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Versioni nga tag-u
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          npm version $v --no-git-tag-version --allow-same-version
+          "VERSIONI=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Paketat
+        run: npm ci --no-audit --no-fund
+
+      - name: Electron-i (kur npm s'e shkarkoi)
+        shell: pwsh
+        run: if (-not (Test-Path node_modules\electron\dist\electron.exe)) { node node_modules\electron\install.js }
+
+      - name: Testet
+        run: npm test
+
+      - name: UI-ja
+        run: npx vite build
+
+      - name: Setup dhe Portable
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          node scripts/nisesi-portabel.mjs
+          npx electron-builder --win nsis portable --x64 --publish never
+
+      - name: GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/shenimet-e-versionit.mjs $env:VERSIONI | Out-File -FilePath shenimet.md -Encoding utf8
+          gh release create "${{ github.ref_name }}" `
+            "release/FinanCare Labels Setup $env:VERSIONI.exe" `
+            "release/FinanCare Labels Portable $env:VERSIONI.exe" `
+            --title "FinanCare Labels $env:VERSIONI" --notes-file shenimet.md --latest

@@ -36,6 +36,12 @@ fshehur pret mbylljen, e zëvendëson exe-në me të njëjtin emër dhe e hap p�
 portabël dhe Setup-i (emrat përmbajnë "Portable" / "Setup" dhe mbarojnë me `.exe`): portabli zëvendëson exe-në, i
 instaluari e instalon Setup-in e ri në heshtje (`/S --updated --force-run`). Çka ka të re: `src/lib/ndryshimet.js`.
 
+### Release-i
+
+`git tag v1.0.3 && git push origin v1.0.3` (versioni i ri shtohet më parë te `src/lib/ndryshimet.js`): GitHub Actions
+(`.github/workflows/release.yml`) ndërton në Windows Setup-in dhe Portable-in me versionin e tag-ut, kalon testet dhe
+krijon release-in me të dy exe-të dhe shënimet nga "Çka ka të re". `build.bat` mbetet për ndërtimin lokal.
+
 ### Kolonat e Excel-it
 
 Rreshti i titujve kërkohet në 30 rreshtat e parë; kolonat njihen sipas emrit, me sinonime si te FinanCare Migrator
