@@ -42,6 +42,21 @@ export const qmimiMeZbritje = (p, rabatiDefault = 0, aplikoPerTeGjithe = false) 
   return Math.round((qmimi - qmimi * (rabati / 100)) * 100) / 100;
 };
 
+// "Automatik me shabllone": rasti i produktit - si gjendjaEProduktit te shablloniQmimores (zbritja ka përparësi para
+// shumicës, si kushti "shumicePaZbritje").
+export const RASTET_AUTOMATIK = ["klasike", "zbritje", "shumice"];
+export const rastiIProduktit = (p) => {
+  const kaZbritje = parseFloat(p.discount) > 0 && (p.qmimiPasZbritjes != null || (parseFloat(p.price) || 0) > 0);
+  if (kaZbritje) return "zbritje";
+  return kaQmimShumice(p) ? "shumice" : "klasike";
+};
+// Ndan produktet sipas rastit, me radhën e tyre brenda çdo grupi: { klasike: [...], zbritje: [...], shumice: [...] }.
+export const ndajSipasRastit = (produktet) => {
+  const grupet = Object.fromEntries(RASTET_AUTOMATIK.map((r) => [r, []]));
+  for (const p of produktet) grupet[rastiIProduktit(p)].push(p);
+  return grupet;
+};
+
 const SKEDARET_E_FONTIT = { bold: "BarlowCondensed-SemiBold.ttf", normal: "BarlowCondensed-Medium.ttf" };
 let fontetPromise = null;
 // Barlow Condensed (OFL, public/fonts): shifrat e ngushta lënë çmimin të dalë shumë më i madh se me
@@ -181,7 +196,10 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     fontet = null,
     vetemNjeEtikete = false,
     faqePerEtikete = false,
-    shablloni = null,
+    shablloni: shablloniIOpsioneve = null,
+    // "Automatik me shabllone": [{ shablloni, products, hapesiraH?, hapesiraV?, orientimi?, margjina? }] - çdo grup në
+    // fletët e veta A4 me rrjetën e shabllonit të vet, njëri pas tjetrit në të njëjtën PDF. Bosh = një shabllon (shablloni).
+    grupet = null,
     emriBiznesit = "",
     hapesiraH = 0,
     hapesiraV = 0,
@@ -191,6 +209,10 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     shfaqShtetin = true,
     // Kur fiken barkodi/flamuri/shteti, çmimi dhe emri zënë vendin e tyre (shablloniQmimores.kutiteMeVendinELire).
     zmadhoNeVendinELire = true,
+    // Kur produkti s'ka flamur/shtet nën barkod, barkodi zbret në mes të vendit të lirë (shablloniQmimores.zhvendosjaEBarkodit).
+    barkodiNeMes = true,
+    // Numrat e çmimit më të ngushtë (deri 80%) që të dalin më të lartë kur ka lartësi bosh mbi/nën to.
+    numratMeTeLarte = false,
     // Vijat e prerjes: null = sipas shabllonit, true/false = gjithmonë / kurrë.
     vijatEPrerjes = null,
     // Korrigjimi i printerit në shfletues (mm): rrjeta zhvendoset djathtas/poshtë; në desktop e bën printimi direkt.
@@ -203,7 +225,25 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
   } = opsionet;
   // Çdo etiketë vizatohet nga një shabllon (të gatshmit te shabllonetEGatshme/ ose ai i përdoruesit) - dizajnet e
   // vjetra në kod (DIZAJNET) u kthyen në shabllone. Vetëm zbritjet reale të produkteve (ato që i zbaton arka).
+  const grupetMeProdukte = Array.isArray(grupet) ? grupet.filter((gr) => gr?.shablloni && gr.products?.length) : null;
+  const meGrupe = Boolean(grupetMeProdukte?.length);
+  // Me grupe: madhësia e parë, faqja e parë dhe rregullimet e fletës merren nga grupi i parë.
+  const shablloni = meGrupe ? grupetMeProdukte[0].shablloni : shablloniIOpsioneve;
   if (!shablloni) throw new Error("Zgjidhni një shabllon për çmimoren.");
+  const rregullimiIGrupit = (gr) => ({
+    orientimi: gr.orientimi ?? orientimi,
+    hapesiraH: gr.hapesiraH ?? hapesiraH,
+    hapesiraV: gr.hapesiraV ?? hapesiraV,
+    margjina: gr.margjina ?? margjina,
+  });
+  const planetEGrupeve = meGrupe
+    ? grupetMeProdukte.map((gr) => {
+        const r = rregullimiIGrupit(gr);
+        const p = planiFletes(gr.shablloni, r.orientimi, r.hapesiraH, r.hapesiraV, r.margjina);
+        if (!p) throw new Error("Automatik me shabllone: zgjidhni vetëm shabllone për fletë A4.");
+        return p;
+      })
+    : null;
   const rabatiDefault = 0;
   const aplikoPerTeGjithe = false;
   // Shablloni i ka përmasat e veta: rrjeta në A4 del prej tyre, ose çdo etiketë është faqe më vete.
@@ -211,9 +251,9 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
   const formati = rrjeta;
   const { w, h } = shablloni;
 
-  const faqeVeqmas = faqePerEtikete || Boolean(rrjeta?.veqmas);
+  const faqeVeqmas = !meGrupe && (faqePerEtikete || Boolean(rrjeta?.veqmas));
   // Plani i fletës (orientimi dhe numri i etiketave) llogaritet para krijimit të PDF-së, që faqja të dalë e duhura.
-  const plani = faqeVeqmas || vetemNjeEtikete ? null : planiFletes(shablloni, orientimi, hapesiraH, hapesiraV, margjina);
+  const plani = faqeVeqmas || vetemNjeEtikete ? null : meGrupe ? planetEGrupeve[0] : planiFletes(shablloni, orientimi, hapesiraH, hapesiraV, margjina);
   const doc = vetemNjeEtikete || faqeVeqmas
     ? new jsPDF({ orientation: w > h ? "l" : "p", unit: "mm", format: [w, h] })
     : new jsPDF(plani ? plani.orientimi : "p", "mm", "a4");
@@ -268,9 +308,18 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
   const mm = (fs) => fs / sf;
   const kapitale = (fs) => mm(fs) * KAPITALE;
   const bishti = (fs) => mm(fs) * BISHTI;
+  // Gjerësia rritet njësoj me madhësinë e shkronjës: matet një herë për tekst + stil (me mijëra etiketa matja e jsPDF-së
+  // ishte pjesa më e ngadaltë e gjenerimit), pastaj shumëzohet.
+  const memoriaEGjeresise = new Map();
   const gjeresia = (teksti, fs, stili = "bold") => {
-    doc.setFont(FONTI, stili);
-    return (doc.getStringUnitWidth(teksti) * fs) / sf;
+    const celesi = `${stili}|${teksti}`;
+    let njesia = memoriaEGjeresise.get(celesi);
+    if (njesia === undefined) {
+      doc.setFont(FONTI, stili);
+      njesia = doc.getStringUnitWidth(teksti);
+      memoriaEGjeresise.set(celesi, njesia);
+    }
+    return (njesia * fs) / sf;
   };
 
   const shkronjaMeEMadhe = (nxe, minFs, maxFs) => {
@@ -293,7 +342,18 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     return `${t.trimEnd()}...`;
   };
 
-  const pershtatTekstin = (teksti, maxW, maxH, { maxFs = 72, minFs = 5, maxRreshta = 2, lh = 1.1, stili = "bold" } = {}) => {
+  // Tekstet që përsëriten në çdo etiketë (titujt e festave, urimet, data) përshtaten një herë, jo për çdo etiketë.
+  const memoriaEPershtatjes = new Map();
+  const pershtatTekstin = (teksti, maxW, maxH, opsionetEPershtatjes = {}) => {
+    const celesi = JSON.stringify([teksti, maxW, maxH, opsionetEPershtatjes]);
+    let blloku = memoriaEPershtatjes.get(celesi);
+    if (!blloku) {
+      blloku = pershtatTekstinPaMemorie(teksti, maxW, maxH, opsionetEPershtatjes);
+      memoriaEPershtatjes.set(celesi, blloku);
+    }
+    return blloku;
+  };
+  const pershtatTekstinPaMemorie = (teksti, maxW, maxH, { maxFs = 72, minFs = 5, maxRreshta = 2, lh = 1.1, stili = "bold" } = {}) => {
     // Hapësirat e dyfishta ("Sallam EXTRA  350GR"), tab-at dhe rreshtat e rinj bëhen një hapësirë: përndryshe teksti i
     // ndarë s'përputhet kurrë me fjalët dhe emri del me shkronjën më të vogël.
     const t = String(teksti || "").replace(/\s+/g, " ").trim();
@@ -423,43 +483,54 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     // Pa simbolin €: vetëm njësia (p.sh. "/kg") mbetet, që çmimi të lexohet vetëm si numër.
     const simboli = shfaqEuro ? (njesia ? `€/${njesia}` : "€") : njesia ? `/${njesia}` : "";
     const hapesira = (fs) => mm(fs) * 0.05;
+    // s = shkalla horizontale e shifrave (1 = normale): me "Numrat më të lartë" shifrat ngushtohen deri 80% që të dalin
+    // më të larta kur gjerësia e kufizon çmimin dhe sipër/poshtë ka vend bosh.
+    let s = 1;
+    const tekst = (t, x0, baza) => doc.text(t, x0, baza, s < 1 ? { horizontalScale: s } : undefined);
     let gjeresiaQmimit;
     let lartesiaBllokut;
     let vizato;
     if (stiliQmimit === "dhjetore") {
       const teksti = `${euro}.${cent}`;
       // Pa simbol s'rezervohet vend për të: numri zë gjithë gjerësinë dhe del më i madh.
-      gjeresiaQmimit = (fs) => gjeresia(teksti, fs) + (simboli ? hapesira(fs) + gjeresia(simboli, fs * 0.36) : 0);
+      gjeresiaQmimit = (fs) => (gjeresia(teksti, fs) + (simboli ? hapesira(fs) + gjeresia(simboli, fs * 0.36) : 0)) * s;
       lartesiaBllokut = (fs) => kapitale(fs);
       vizato = (x0, baza, fs) => {
         doc.setFontSize(fs);
-        doc.text(teksti, x0, baza);
+        tekst(teksti, x0, baza);
         doc.setFontSize(fs * 0.36);
-        doc.text(simboli, x0 + gjeresia(teksti, fs) + hapesira(fs), baza - kapitale(fs) + kapitale(fs * 0.36));
+        tekst(simboli, x0 + (gjeresia(teksti, fs) + hapesira(fs)) * s, baza - kapitale(fs) + kapitale(fs * 0.36));
       };
     } else {
       // Pa simbol, centet zënë edhe vendin e tij poshtë: dalin më të mëdha (0,6 në vend të 0,5).
       const kCent = simboli ? 0.5 : 0.6;
       gjeresiaQmimit = (fs) =>
-        gjeresia(euro, fs) + hapesira(fs) + Math.max(gjeresia(cent, fs * kCent), simboli ? gjeresia(simboli, fs * 0.3) : 0);
+        (gjeresia(euro, fs) + hapesira(fs) + Math.max(gjeresia(cent, fs * kCent), simboli ? gjeresia(simboli, fs * 0.3) : 0)) * s;
       lartesiaBllokut = (fs) => kapitale(fs) + (/[gjpqy]/.test(simboli) ? bishti(fs * 0.3) : 0);
       vizato = (x0, baza, fs) => {
-        const xCent = x0 + gjeresia(euro, fs) + hapesira(fs);
+        const xCent = x0 + (gjeresia(euro, fs) + hapesira(fs)) * s;
         doc.setFontSize(fs);
-        doc.text(euro, x0, baza);
+        tekst(euro, x0, baza);
         doc.setFontSize(fs * kCent);
-        doc.text(cent, xCent, baza - kapitale(fs) + kapitale(fs * kCent));
+        tekst(cent, xCent, baza - kapitale(fs) + kapitale(fs * kCent));
         if (simboli) {
           doc.setFontSize(fs * 0.3);
-          doc.text(simboli, xCent, baza);
+          tekst(simboli, xCent, baza);
         }
       };
     }
-    const fs = shkronjaMeEMadhe(
-      (f) => gjeresiaQmimit(f) <= kutia.w && lartesiaBllokut(f) <= kutia.h,
-      4,
-      maxFs
-    );
+    const pershtatet = (f) => gjeresiaQmimit(f) <= kutia.w && lartesiaBllokut(f) <= kutia.h;
+    let fs = shkronjaMeEMadhe(pershtatet, 4, maxFs);
+    if (numratMeTeLarte && lartesiaBllokut(fs) < kutia.h * 0.97) {
+      // Madhësia më e madhe me shifrat 80%, pastaj ngushtimi vetëm aq sa duhet (jo gjithmonë 80%).
+      s = 0.8;
+      const fsILarte = shkronjaMeEMadhe(pershtatet, 4, maxFs);
+      s = 1;
+      if (fsILarte > fs * 1.03) {
+        s = Math.min(1, Math.max(0.8, kutia.w / gjeresiaQmimit(fsILarte)));
+        fs = fsILarte;
+      }
+    }
     const gjer = gjeresiaQmimit(fs);
     const x0 =
       rreshtimi === "right" ? kutia.x + kutia.w - gjer : rreshtimi === "center" ? kutia.x + (kutia.w - gjer) / 2 : kutia.x;
@@ -467,6 +538,9 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     doc.setFont(FONTI, "bold");
     doc.setTextColor(...ngjyra);
     vizato(x0, baza, fs);
+    // Shkalla horizontale (Tz) mbetet në gjendjen e tekstit të PDF-së edhe pas çmimit: pa e kthyer në 100%, çdo tekst
+    // që vizatohet pas tij (emri, titulli, urimi...) dilte edhe ai i ngushtuar.
+    if (s < 1) doc.internal.write("100 Tz");
     return { x0, baza, gjeresia: gjer, lartesia: kapitale(fs), fs };
   };
 
@@ -536,6 +610,7 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     shfaqFlamurin,
     shfaqShtetin,
     zmadhoNeVendinELire,
+    barkodiNeMes,
     merrRabatin,
     merrQmiminMeZbritje,
     kaQmimShumice,
@@ -554,10 +629,10 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     vizatoShigjeten,
   };
 
-  const vizatoEtiketen = (p, x, y) => {
+  const vizatoEtiketen = (p, x, y, sh = shablloni) => {
     doc.setFillColor(255, 255, 255);
-    doc.rect(x, y, w, h, "F");
-    return vizatoShabllonin(mjetetEShabllonit, shablloni, p, x, y);
+    doc.rect(x, y, sh.w, sh.h, "F");
+    return vizatoShabllonin(mjetetEShabllonit, sh, p, x, y);
   };
 
   if (vetemNjeEtikete) {
@@ -578,21 +653,27 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
 
   // Orientimi dhe rrjeta zgjidhen nga planiFletes (sa më shumë etiketa me margjinën minimale të zgjedhur); rrjeta
   // vihet në mes të fletës, që etiketat të jenë sa më larg skajit. Mes etiketave ka hapësirë (mm) për prerje.
-  const { kolonat, perFaqe, gH, gV } = plani;
-  const xFillimi = plani.anash + (Number(zhvendosjaX) || 0);
-  const yFillimi = plani.lartPoshte + (Number(zhvendosjaY) || 0);
-  const meVija = vijatEPrerjes == null ? shablloni.vijaPrerjes : Boolean(vijatEPrerjes);
-  products.forEach((product, i) => {
-    if (i > 0 && i % perFaqe === 0) {
-      doc.addPage(plani.orientimi === "l" ? [297, 210] : [210, 297], plani.orientimi);
-      mbushFaqenBardhe();
-    }
-    const n = i % perFaqe;
-    const x = xFillimi + (n % kolonat) * (w + gH);
-    const y = yFillimi + Math.floor(n / kolonat) * (h + gV);
-    vizatoEtiketen(product, x, y);
-    if (meVija) korniza(x, y, w, h, 0.3, NGJYRA.zi); // vijë prerjeje e zezë e fortë
-  });
+  // Një grup = produktet e një shablloni në fletët e veta; me "Automatik me shabllone" çdo grup nis në fletë të re.
+  const vizatoRrjeten = (lista, sh, pl, faqeERe) => {
+    const { kolonat, perFaqe, gH, gV } = pl;
+    const xFillimi = pl.anash + (Number(zhvendosjaX) || 0);
+    const yFillimi = pl.lartPoshte + (Number(zhvendosjaY) || 0);
+    const meVija = vijatEPrerjes == null ? sh.vijaPrerjes : Boolean(vijatEPrerjes);
+    lista.forEach((product, i) => {
+      if ((i === 0 && faqeERe) || (i > 0 && i % perFaqe === 0)) {
+        doc.addPage(pl.orientimi === "l" ? [297, 210] : [210, 297], pl.orientimi);
+        mbushFaqenBardhe();
+      }
+      const n = i % perFaqe;
+      const x = xFillimi + (n % kolonat) * (sh.w + gH);
+      const y = yFillimi + Math.floor(n / kolonat) * (sh.h + gV);
+      vizatoEtiketen(product, x, y, sh);
+      if (meVija) korniza(x, y, sh.w, sh.h, 0.3, NGJYRA.zi); // vijë prerjeje e zezë e fortë
+    });
+  };
+
+  if (meGrupe) grupetMeProdukte.forEach((gr, i) => vizatoRrjeten(gr.products, gr.shablloni, planetEGrupeve[i], i > 0));
+  else vizatoRrjeten(products, shablloni, plani, false);
 
   return doc;
 };

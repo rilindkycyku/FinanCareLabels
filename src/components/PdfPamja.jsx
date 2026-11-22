@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinus, faMagnifyingGlassPlus, faPrint, faShareNodes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinus, faMagnifyingGlassPlus, faPrint, faShareNodes, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { pdfjsLib } from "../lib/pdfjs";
-import { faqetPerPrintim } from "../lib/faqetEPdf";
+import { faqetNeGrupe, faqetPerPrintim } from "../lib/faqetEPdf";
 
 export { faqetPerPrintim };
 import { eshteDesktop } from "../lib/ruajtja";
@@ -63,7 +63,7 @@ export function PdfKanvasi({ blob, gjeresia = 900, emriKlases = "pdf-faqja", zoo
       try {
         doc = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise;
         if (anuluar || !mbajtesi) return;
-        const kanvasat = [];
+        // Faqja e parë del menjëherë, të tjerat shtohen një nga një (me 100+ faqe pritja e të gjitha zgjaste shumë).
         for (let n = 1; n <= doc.numPages; n++) {
           const faqja = await doc.getPage(n);
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -76,9 +76,9 @@ export function PdfKanvasi({ blob, gjeresia = 900, emriKlases = "pdf-faqja", zoo
           aplikoZoom(c, zoomRef.current);
           await faqja.render({ canvasContext: c.getContext("2d"), viewport }).promise;
           if (anuluar) return;
-          kanvasat.push(c);
+          if (n === 1) mbajtesi.replaceChildren(c);
+          else mbajtesi.appendChild(c);
         }
-        mbajtesi.replaceChildren(...kanvasat);
       } catch (err) {
         if (!anuluar) {
           console.error("PDF-ja nuk u shfaq:", err);
@@ -112,6 +112,14 @@ export function PdfKanvasi({ blob, gjeresia = 900, emriKlases = "pdf-faqja", zoo
 export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh, onUKrye, kalibrimet = null }) {
   const [duke, setDuke] = useState(null); // null | "printo" | "ruaj" | "hap"
   const [progresi, setProgresi] = useState(null);
+  // "Anulo" gjatë përgatitjes së faqeve për printim (me qindra faqe zgjat): përgatitja ndalet te faqja tjetër.
+  const anuluar = useRef(false);
+  useEffect(
+    () => () => {
+      anuluar.current = true; // dritarja u mbyll: s'ka kuptim të vazhdojë
+    },
+    []
+  );
   // Zoom-i: null = përshtatur në dritare; 1 = madhësia reale. Rikthehet te përshtatja për çdo PDF të re.
   const [zoom, setZoom] = useState(null);
   useEffect(() => setZoom(null), [pdf]);
@@ -188,7 +196,10 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
     if (eshteDesktop || !pdf) return undefined;
     let aktiv = true;
     let p = null;
-    pergatitPrintimin(pdf.blob, (n, gjithsej) => aktiv && setProgresiWeb(`${n}/${gjithsej}`))
+    pergatitPrintimin(pdf.blob, (n, gjithsej) => {
+      if (!aktiv) throw new Error("anuluar"); // dritarja u mbyll ose PDF-ja ndryshoi: ndalet
+      setProgresiWeb(`${n}/${gjithsej}`);
+    })
       .then((r) => {
         p = r;
         if (aktiv) setPrintimiWeb(r);
@@ -222,23 +233,50 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
 
   const printo = async () => {
     setDuke("printo");
+    anuluar.current = false;
+    const opsionetEPrintimit = { printeri, kopjet, zhvendosjaX: kalibrimi.x, zhvendosjaY: kalibrimi.y, shkalla: kalibrimi.shkalla };
+    const dergo = (faqet, w, h) => window.labels.printoPdf(faqet, Math.round(w * 10) / 10, Math.round(h * 10) / 10, opsionetEPrintimit);
+    let teDerguara = 0;
     try {
-      const { faqet, w, h } = await faqetPerPrintim(pdf.blob, (n, gjithsej) => setProgresi(`${n}/${gjithsej}`));
-      setProgresi(null);
-      const r = await window.labels.printoPdf(faqet, Math.round(w * 10) / 10, Math.round(h * 10) / 10, {
-        printeri,
-        kopjet,
-        zhvendosjaX: kalibrimi.x,
-        zhvendosjaY: kalibrimi.y,
-        shkalla: kalibrimi.shkalla,
-      });
-      if (r?.ok) {
-        onUKrye?.("printim");
-        if (printeri) onMesazh?.("success", `U dërgua te ${printeri}${kopjet > 1 ? ` (${kopjet} kopje)` : ""}.`);
+      if (!printeri) {
+        // Pa printer të zgjedhur hapet dritarja e Windows-it: një punë e vetme (jo një dritare për çdo grup).
+        const { faqet, w, h } = await faqetPerPrintim(pdf.blob, (n, gjithsej) => {
+          if (anuluar.current) throw new Error("anuluar");
+          setProgresi(`${n}/${gjithsej}`);
+        });
+        setProgresi(null);
+        const r = await dergo(faqet, w, h);
+        if (r?.ok) onUKrye?.("printim");
+        else if (!r?.anuluar) await hapPasDeshtimit(r?.arsyeja);
+        return;
       }
-      else if (!r?.anuluar) await hapPasDeshtimit(r?.arsyeja);
+      // Me printer të zgjedhur: grupe me nga 20 faqe - grupi i parë printohet pas pak sekondash dhe ndërsa printeri
+      // punon përgatitet grupi tjetër (radha te Electron-i i mban në rend). "Anulo" ndal grupet që s'janë dërguar.
+      let ePerparshme = null;
+      let gjithsej = 0;
+      for await (const grupi of faqetNeGrupe(pdf.blob, 20, (n, t) => {
+        if (anuluar.current) throw new Error("anuluar");
+        setProgresi(`${n}/${t}`);
+      })) {
+        gjithsej = grupi.gjithsej;
+        if (ePerparshme) {
+          const r = await ePerparshme;
+          if (!r?.ok) throw Object.assign(new Error(r?.arsyeja || "Printimi dështoi"), { pergjigjja: r });
+        }
+        if (anuluar.current) throw new Error("anuluar");
+        ePerparshme = dergo(grupi.faqet, grupi.w, grupi.h);
+        teDerguara = grupi.deri;
+      }
+      const r = await ePerparshme;
+      if (!r?.ok) throw Object.assign(new Error(r?.arsyeja || "Printimi dështoi"), { pergjigjja: r });
+      onUKrye?.("printim");
+      onMesazh?.("success", `U dërgua te ${printeri}: ${gjithsej} faqe${kopjet > 1 ? ` (${kopjet} kopje)` : ""}.`);
     } catch (err) {
-      await hapPasDeshtimit(err?.message || String(err));
+      if (anuluar.current)
+        onMesazh?.("success", teDerguara ? `Printimi u ndal - u dërguan ${teDerguara} faqet e para, të tjerat jo.` : "Printimi u anulua - asgjë s'u dërgua te printeri.");
+      else if (err?.pergjigjja?.anuluar) onMesazh?.("danger", "Printimi u anulua nga printeri / Windows-i.");
+      else if (teDerguara) onMesazh?.("danger", `Printimi u ndal pas ${teDerguara} faqeve: ${err?.message || err}. Printoni pjesën tjetër ose përdorni "Ruaj PDF".`);
+      else await hapPasDeshtimit(err?.message || String(err));
     } finally {
       setDuke(null);
       setProgresi(null);
@@ -378,6 +416,12 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
           <Button className="btn-save px-4" disabled={Boolean(duke) || !printimiWeb} onClick={printoWeb}>
             {!printimiWeb ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}
             {!printimiWeb ? (progresiWeb ? `Duke përgatitur ${progresiWeb}...` : "Duke përgatitur...") : "Printo"}
+          </Button>
+        )}
+        {eshteDesktop && duke === "printo" && progresi && (
+          <Button variant="secondary" className="btn-cancel px-3" onClick={() => (anuluar.current = true)} title="Ndal përgatitjen - asgjë s'dërgohet te printeri">
+            <FontAwesomeIcon icon={faXmark} className="me-2" />
+            Anulo
           </Button>
         )}
         {eshteDesktop && (

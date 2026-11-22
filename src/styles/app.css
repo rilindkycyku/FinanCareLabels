@@ -127,7 +127,7 @@ body {
 }
 
 .lb-permbajtja {
-  padding: 20px;
+  padding: 0;
 }
 
 .lb-excel {
@@ -146,7 +146,8 @@ body {
 }
 
 .lb-dizajnet {
-  max-height: 300px;
+  max-height: calc(100vh - 240px - var(--tb-h));
+  min-height: 200px;
   overflow-y: auto;
 }
 
@@ -234,10 +235,10 @@ body {
 .lb-wizard {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
-  height: calc(100vh - 116px - var(--tb-h));
+  height: calc(100vh - 54px - var(--tb-h));
   min-height: 560px;
-  border: 1px solid var(--sp-border);
-  border-radius: var(--sp-radius-lg);
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
   background: var(--sp-bg);
 }
@@ -446,7 +447,15 @@ body {
 
 /* Faqja e printimit zë gjithë dritaren: tabela lëviz brenda hapit, jo faqja. */
 .lb-wizard .sp-table-container {
-  max-height: calc(100vh - 430px - var(--tb-h)) !important;
+  max-height: calc(100vh - 368px - var(--tb-h)) !important;
+}
+
+/* Canvas i "Fletës së parë" - i përshtatur brenda kolonës djathtas */
+canvas.lb-fleta-faqe {
+  max-height: calc(100vh - 180px - var(--tb-h));
+  width: auto !important;
+  max-width: 100%;
+  display: block;
 }
 
 @media (max-width: 991px) {
@@ -579,7 +588,7 @@ html.ka-shiritin .modal-backdrop {
 .lb-kalibrimi-nr { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #10b981; }
 
 /* ---------- Udhëzuesi ---------- */
-.lb-udhezuesi { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; height: 100%; min-height: 0; }
+.lb-udhezuesi { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; height: 100%; min-height: 0; padding: 20px; }
 .lb-udh-menyja { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; align-self: start; }
 .lb-udh-menyja button { text-align: left; border: 0; background: transparent; color: var(--sp-text-muted, #94a3b8); padding: 7px 10px; border-radius: 8px; font-size: 13px; }
 .lb-udh-menyja button:hover { background: rgba(148, 163, 184, 0.1); }

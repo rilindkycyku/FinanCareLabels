@@ -14,7 +14,7 @@ await build({
   platform: "node",
   format: "esm",
   outExtension: { ".js": ".mjs" },
-  external: ["xlsx", "jspdf"],
+  external: ["xlsx", "jspdf", "qrcode"],
   logLevel: "error",
   // import.meta.glob është i Vite-s (flamujt) - në teste s'duhet.
   define: { "import.meta.glob": "globalThis.__glob" },

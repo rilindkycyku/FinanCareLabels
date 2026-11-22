@@ -661,7 +661,10 @@ const HAPI = 0.25;
 const zgjeroNeHapesireTeLire = (o, pengesat, kornizat, sh) => {
   const SKAJI = Math.max(0.8, Math.min(sh.w, sh.h) * 0.015);
   const LARGESIA_NGA_ELEMENTET = Math.max(0.6, Math.min(sh.w, sh.h) * 0.02);
-  const fryre = pengesat.map((p) => ({ x: p.x - LARGESIA_NGA_ELEMENTET, y: p.y - LARGESIA_NGA_ELEMENTET, w: p.w + 2 * LARGESIA_NGA_ELEMENTET, h: p.h + 2 * LARGESIA_NGA_ELEMENTET }));
+  // Sipër/poshtë më shumë ajër (3.5% e lartësisë): te etiketat e mëdha (p.sh. festive 200 × 143.5) çmimi i rritur
+  // ngjitej me rreshtin e shtetit sipër dhe me vijën poshtë.
+  const LARGESIA_VERTIKALE = Math.max(LARGESIA_NGA_ELEMENTET, sh.h * 0.035);
+  const fryre = pengesat.map((p) => ({ x: p.x - LARGESIA_NGA_ELEMENTET, y: p.y - LARGESIA_VERTIKALE, w: p.w + 2 * LARGESIA_NGA_ELEMENTET, h: p.h + 2 * LARGESIA_VERTIKALE }));
   // Kufijtë: etiketa (pa skajin) dhe kornizat që e përmbajnë çmimin - por kurrë më ngushtë se kutia origjinale.
   let x0 = SKAJI, y0 = SKAJI, x1 = sh.w - SKAJI, y1 = sh.h - SKAJI;
   for (const kk of kornizat) {
@@ -744,6 +747,40 @@ const kutiteMeVendinELire = (m, sh, g) => {
   return rezultati;
 };
 
+// ---- Barkodi në mes: kur produkti s'ka origjinë (ose flamuri/shteti janë fikur), flamuri dhe shteti nën barkod s'dalin
+// dhe mbetet vend bosh - barkodi zbret përgjysmë të atij vendi, që të dalë në mes pranë çmimit. Çmimi s'lëviz. ----
+const eshteFushaEShtetit = (el) => el.lloji === "tekst" && /\{shteti\}/.test(el.teksti || "") && !String(el.teksti).replace(/\{shteti\}/g, "").trim();
+const mungonOrigjina = (m, el, p, g) => {
+  if (el.lloji === "flamur") return !p.origin || m.shfaqFlamurin === false || !plotesonKushtin(el.kushti, g);
+  if (eshteFushaEShtetit(el)) return !g.vlerat.shteti || !plotesonKushtin(el.kushti, g);
+  return false;
+};
+const zhvendosjaEBarkodit = (m, sh, p, g, kutiteERe) => {
+  if (m.barkodiNeMes === false || !m.shfaqBarkodin) return null;
+  const teMunguarat = sh.elementet.filter((el) => mungonOrigjina(m, el, p, g));
+  if (!teMunguarat.length) return null;
+  const kutia = (el) => kutiteERe?.get(el) || el;
+  const teDukshmit = sh.elementet.filter((el) => plotesonKushtin(el.kushti, g) && !teMunguarat.includes(el));
+  const rezultati = new Map();
+  for (const b of teDukshmit.filter((el) => el.lloji === "barkod")) {
+    const poshte = b.y + b.h;
+    const neKolone = (f) => mbulimi(f.x, f.x + f.w, b.x, b.x + b.w) >= 0.3 * Math.min(f.w, b.w);
+    // Flamuri/shteti nën barkod (p.sh. "Raft - 21") → barkodi zbret; mbi barkod (p.sh. "Klasike", flamuri sipër)
+    // → barkodi ngjitet. Gjithmonë gjysma e vendit të lirë, që të dalë në mes.
+    const nen = teMunguarat.filter((f) => f.y >= poshte - E - 1 && neKolone(f));
+    const mbi = teMunguarat.filter((f) => f.y + f.h <= b.y + E + 1 && neKolone(f));
+    let dy = 0;
+    if (nen.length) dy = (Math.max(...nen.map((f) => f.y + f.h)) - poshte) / 2;
+    else if (mbi.length) dy = -(b.y - Math.min(...mbi.map((f) => f.y))) / 2;
+    if (Math.abs(dy) < 0.5) continue;
+    const iRi = { x: b.x, y: b.y + dy, w: b.w, h: b.h };
+    // Vetëm kur vendi i ri s'prek asnjë element tjetër që del (kornizat që e përmbajnë barkodin s'llogariten).
+    const pengon = teDukshmit.some((tj) => tj !== b && !permban(kutia(tj), b) && priten(iRi, kutia(tj)));
+    if (!pengon && iRi.y >= -E && iRi.y + iRi.h <= sh.h + E) rezultati.set(b, dy);
+  }
+  return rezultati.size ? rezultati : null;
+};
+
 // Vizaton një etiketë sipas shabllonit, me këndin lart-majtas te (x, y). Elementet vizatohen sipas
 // radhës në listë: i fundit del sipër.
 export const vizatoShabllonin = (m, sh, p, x, y) => {
@@ -753,8 +790,14 @@ export const vizatoShabllonin = (m, sh, p, x, y) => {
     m.doc.rect(x, y, sh.w, sh.h, "F");
   }
   const kutiteERe = kutiteMeVendinELire(m, sh, g);
+  const barkodetEZbritura = zhvendosjaEBarkodit(m, sh, p, g, kutiteERe);
   for (const el of sh.elementet) {
     if (!plotesonKushtin(el.kushti, g)) continue;
+    const dyBarkodi = barkodetEZbritura?.get(el);
+    if (dyBarkodi) {
+      vizatoElementin(m, el, p, g, x + el.x, y + el.y + dyBarkodi);
+      continue;
+    }
     const k = kutiteERe?.get(el);
     // Madhësia maksimale e shkronjës (madhesia) s'e lë të rritet: në vendin e lirë hiqet kufiri, sipas raportit.
     // Çmimi i zgjeruar anash del në mes të vendit të ri (ngjitur djathtas linte gjysmën e etiketës bosh).

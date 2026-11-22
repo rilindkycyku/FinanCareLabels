@@ -35,8 +35,9 @@ const VIJA_KURBANI = { skedari: "fetare/xhamiaMeDashin.png", raporti: 560 / 161,
 // Poster 2 për fletë (200 × 143.5, horizontal).
 const poster2 = (f) => [
   kuti(0, 0, 200, 22, { mbushja: f.koka }),
-  tekst(f.titulli, 6, 2.5, f.koke ? 128 : 150, 11.5, { ngjyra: f.titulliNgjyra, rreshtimi: "left" }),
-  tekst("{data}", 6, 14, f.koke ? 128 : 150, 6, { ngjyra: f.dataNgjyra, rreshtimi: "left", trashe: false }),
+  // Titulli dhe data me ~2 mm hapësirë (ishin ngjitur: titulli mbaronte aty ku niste data).
+  tekst(f.titulli, 6, 2.5, f.koke ? 128 : 150, 10, { ngjyra: f.titulliNgjyra, rreshtimi: "left" }),
+  tekst("{data}", 6, 14.5, f.koke ? 128 : 150, 5.5, { ngjyra: f.dataNgjyra, rreshtimi: "left", trashe: false }),
   f.koke ? tekst(f.koke, 140, 4, 54, 14, { ngjyra: f.titulliNgjyra, rreshtimi: "right" }) : null,
   emri(6, 24.5, 188, 22, { rreshtimi: "center", madhesia: 46 }),
   vije(6, 47, 188, 1.5, { vija: ZI, trashesia: 0.3 }),
@@ -46,8 +47,9 @@ const poster2 = (f) => [
   // Me zbritje, krah për krah: vula, çmimi i vjetër i prerë në mes dhe çmimi i ri i madh djathtas (të ndarë qartë).
   vule(8, 61, 32, { kushti: "zbritje" }),
   qmimi("vjeter", 44, 66, 52, 22, { ngjyra: GRI, iPrere: true, rreshtimi: "center", kushti: "zbritje" }),
-  qmimi("aktual", 102, 56, 92, 46, { ngjyra: KUQE, rreshtimi: "center", kushti: "zbritje" }),
-  qmimi("aktual", 6, 58, 188, 46, { rreshtimi: "center", kushti: "paZbritje" }),
+  // Çmimet 3-4 mm larg rreshtit të shtetit sipër dhe vijës poshtë (çmimi pa zbritje e prekte vijën).
+  qmimi("aktual", 102, 59, 92, 42, { ngjyra: KUQE, rreshtimi: "center", kushti: "zbritje" }),
+  qmimi("aktual", 6, 60, 188, 41, { rreshtimi: "center", kushti: "paZbritje" }),
   vije(6, 104.5, 188, 1.5, { vija: ZI, trashesia: 0.3 }),
   ...(f.vija ? urimiMbiVije2(f) : [
     tekst(f.urimi, 6, 110, 120, 24, { rreshta: 2, rreshtimi: "left", ngjyra: f.urimiNgjyra || ZI }),
@@ -78,7 +80,7 @@ const urimiMbiVije2 = (f) => {
 // Poster 4 për fletë (100 × 143.5, në këmbë).
 const poster4 = (f) => [
   kuti(0, 0, 100, 22, { mbushja: f.koka }),
-  tekst(f.titulli, 4, 2.5, 92, 11, { ngjyra: f.titulliNgjyra, rreshta: 2 }),
+  tekst(f.titulli, 4, 2.5, 92, 10, { ngjyra: f.titulliNgjyra, rreshta: 2 }),
   tekst("{data}", 4, 14.5, 92, 5.5, { ngjyra: f.dataNgjyra, trashe: false }),
   emri(4, 24, 92, 19, { rreshtimi: "center", madhesia: 30 }),
   vije(4, 44, 92, 1.5, { vija: ZI, trashesia: 0.3 }),
@@ -86,8 +88,8 @@ const poster4 = (f) => [
   tekst("{shteti}", 14, 46.3, 82, 6, { rreshtimi: "left", madhesia: 14 }),
   vule(4, 55, 28, { kushti: "zbritje" }),
   qmimi("vjeter", 34, 54, 62, 11, { ngjyra: GRI, iPrere: true, rreshtimi: "center", kushti: "zbritje" }),
-  qmimi("aktual", 34, 69.5, 62, 23.5, { ngjyra: KUQE, rreshtimi: "center", kushti: "zbritje" }),
-  qmimi("aktual", 4, 55, 92, 37, { rreshtimi: "center", kushti: "paZbritje" }),
+  qmimi("aktual", 34, 69.5, 62, 22, { ngjyra: KUQE, rreshtimi: "center", kushti: "zbritje" }),
+  qmimi("aktual", 4, 56, 92, 35, { rreshtimi: "center", kushti: "paZbritje" }),
   vije(4, 94, 92, 1.5, { vija: ZI, trashesia: 0.3 }),
   ...(f.vija ? urimiMbiVije4(f) : [
     tekst(f.urimi, 4, 96.5, 92, 10.5, { rreshta: 2, ngjyra: f.urimiNgjyra || ZI }),

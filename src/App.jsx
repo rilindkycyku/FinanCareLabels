@@ -7,7 +7,7 @@ import ShiritiITitullit from "./components/ShiritiITitullit";
 // Editori dhe Udhëzuesi ngarkohen kur hapen: hapja e programit lexon vetëm Printimin.
 const Editori = lazy(() => import("./Editori"));
 const Udhezuesi = lazy(() => import("./Udhezuesi"));
-import KalibrimiPrinterit from "./components/KalibrimiPrinterit";
+import Cilesimet from "./components/Cilesimet";
 import { NDRYSHIMET, krahasoVersionet, ndryshimetMes } from "./lib/ndryshimet";
 import { eshteCelular } from "./lib/shfletuesi";
 import { eshteDesktop, lexoCilesimet, ruajCilesimet } from "./lib/ruajtja";
@@ -50,6 +50,7 @@ export default function App() {
   // Shfletuesi: Excel-i i lëshuar në dritare (s'ka shteg skedari) shkon te Printimi si File.
   const [excelILeshuar, setExcelILeshuar] = useState(null);
   const [mbiDritare, setMbiDritare] = useState(false);
+  const [hapjaEPare, setHapjaEPare] = useState(false); // konfigurimi i parë (Cilësimet si magjistar, mund të kalohet)
   const [ndryshimet, setNdryshimet] = useState(null); // lista e versioneve për "Çka ka të re"
   // Përditësimi: { versioni, shenimet, madhesia, vetvetiu, gjendja: "gati" | "shkarkim" | "shkarkuar" | "gabim", progresi, gabimi }
   const [perditesimi, setPerditesimi] = useState(null);
@@ -89,6 +90,11 @@ export default function App() {
     // Para 1.0.2 versioni s'ruhej: cilësimet ekzistuese = përdorues i 1.0.1 që sapo përditësoi.
     const kaPerdorur = cilesimet.emriBiznesit || cilesimet.skedariExcel || Object.keys(cilesimet.shabllonetSipasFletes || {}).length;
     const iFundit = cilesimet.versioniIFundit || (kaPerdorur ? "1.0.1" : "");
+    // Hapja e parë fare: programi hapet te Cilësimet si konfigurim (Biznesi, Pamja, Printeri...), që mund të kalohet.
+    if (!iFundit) {
+      setHapjaEPare(true);
+      setFaqja("cilesimet");
+    }
     if (iFundit !== VERSIONI) {
       // Hapja e parë fare s'ka "të reja"; pas përditësimit shfaqen versionet që s'janë parë.
       if (iFundit && krahasoVersionet(VERSIONI, iFundit) > 0) setNdryshimet(ndryshimetMes(iFundit, VERSIONI));
@@ -330,114 +336,27 @@ export default function App() {
           )}
           {faqja === "udhezuesi" && <Udhezuesi />}
         </Suspense>
-        {faqja === "cilesimet" && (
-          <div className="ql-seksioni lb-cilesimet">
-            <div className="ql-titulli-seksionit">Biznesi</div>
-            <Form.Group className="mb-3">
-              <Form.Label className="small text-white-50">Emri i biznesit (fusha {"{dyqani}"} te shabllonet)</Form.Label>
-              <Form.Control maxLength={80} value={cilesimet.emriBiznesit} onChange={(e) => ndryshoCilesimet({ emriBiznesit: e.target.value })} />
-            </Form.Group>
-            <div className="ql-titulli-seksionit mt-4">Pamja</div>
-            <Form.Group className="mb-3">
-              <Form.Label className="small text-white-50">Tema</Form.Label>
-              <Form.Select value={tema} onChange={(e) => ndryshoCilesimet({ tema: e.target.value })}>
-                <option value="light">E bardhë</option>
-                <option value="dark">E errët</option>
-              </Form.Select>
-            </Form.Group>
-            {!eshteDesktop && (
-              <>
-                <div className="ql-titulli-seksionit mt-4">Aplikacioni për Windows</div>
-                <div className="text-white-50 small mb-2">
-                  Për punën e përditshme në kompjuter, shkarkoni FinanCare Labels për Windows: {PERPARESITE_E_DESKTOPIT}. "Setup" instalohet (pa leje
-                  administratori), "Portable" punon pa instalim nga USB. Shabllonet i merrni me shkarkimin e tyre te Editori.
-                </div>
-                <a className="btn btn-sm btn-save" href={SHKARKIMI_DESKTOP} target="_blank" rel="noopener noreferrer">
-                  <FontAwesomeIcon icon={faDesktop} className="me-2" />
-                  Shkarko për Windows
-                </a>
-              </>
-            )}
-            <div className="ql-titulli-seksionit mt-4">Printeri</div>
-            <KalibrimiPrinterit kalibrimet={cilesimet.kalibrimet} ndrysho={ndryshoCilesimet} mesazh={mesazh} />
-            <div className="ql-titulli-seksionit mt-4">Përditësimet</div>
-            <div className="d-flex align-items-center gap-3 flex-wrap">
-              <span>
-                Versioni <Badge bg="success">{VERSIONI || "-"}</Badge>
-              </span>
-              {!eshteDesktop && <span className="small text-white-50">Versioni në shfletues përditësohet vetë - gjithmonë i fundit.</span>}
-              {eshteDesktop && (
-              <Form.Check
-                type="switch"
-                id="lb-perditesimet"
-                className="small mb-0"
-                label="Kontrollo vetë për versione të reja (kur ka internet)"
-                checked={kontrolloAuto}
-                onChange={(e) => ndryshoCilesimet({ kontrolloPerditesimet: e.target.checked })}
-              />
-              )}
-              {eshteDesktop && (
-                <Button size="sm" variant="secondary" className="btn-cancel" disabled={kontrolli === "duke"} onClick={() => kontrollo(true)}>
-                  {kontrolli === "duke" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faArrowsRotate} className="me-2" />}
-                  Kontrollo tani
-                </Button>
-              )}
-              <Button size="sm" variant="secondary" className="btn-cancel" onClick={() => setNdryshimet(NDRYSHIMET)}>
-                <FontAwesomeIcon icon={faGift} className="me-2" />
-                Çka ka të re
-              </Button>
-            </div>
-            {kontrolli && kontrolli !== "duke" && <div className="small text-white-50 mt-2">{kontrolli}</div>}
-            <div className="ql-titulli-seksionit mt-4">Të dhënat</div>
-            <div className="text-white-50 small mb-2">
-              {!eshteDesktop ? (
-                <>
-                  Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë shfletues, në këtë pajisje
-                  (jo në internet). Për t'i marrë në një pajisje tjetër, shkarkoni shabllonet te Editori dhe importojini atje. Pastrimi i të
-                  dhënave të shfletuesit i fshin.
-                </>
-              ) : (
-                <>
-              Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë dosje
-              {menyra === "instaluar"
-                ? " (programi i instaluar). Kur kaloni nga versioni portabël, merrni të dhënat e tij me butonin më poshtë."
-                : ", pranë exe-së portabël. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje."}{" "}
-              Nuk dërgohet asgjë në internet.
-                </>
-              )}
-            </div>
-            <div className="d-flex align-items-center gap-2">
-              <code className="text-info">{dosja || "localStorage (shfletuesi)"}</code>
-              {eshteDesktop && (
-                <Button variant="secondary" size="sm" className="btn-cancel" onClick={() => window.labels.hapDosjenETeDhenave()}>
-                  <FontAwesomeIcon icon={faFolderOpen} className="me-2" />
-                  Hap dosjen
-                </Button>
-              )}
-              {menyra === "instaluar" && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="btn-cancel"
-                  title="Kopjo shabllonet, cilësimet, produktet dhe historikun nga dosja FinanCareLabels-Data e versionit portabël"
-                  onClick={async () => {
-                    try {
-                      const n = await window.labels.importoNgaDosja();
-                      if (n) {
-                        mesazh("success", "Të dhënat e portablit u morën. Programi po rifreskohet...");
-                        setTimeout(() => window.location.reload(), 1200);
-                      }
-                    } catch (err) {
-                      mesazh("danger", String(err?.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
-                    }
-                  }}
-                >
-                  <FontAwesomeIcon icon={faFileImport} className="me-2" />
-                  Merr të dhënat nga portabli
-                </Button>
-              )}
-            </div>
-          </div>
+        {faqja === "cilesimet" && cilesimet && (
+          <Cilesimet
+            cilesimet={cilesimet}
+            ndryshoCilesimet={ndryshoCilesimet}
+            tema={tema}
+            mesazh={mesazh}
+            versioni={VERSIONI}
+            kontrolli={kontrolli}
+            kontrollo={kontrollo}
+            kontrolloAuto={kontrolloAuto}
+            hapNdryshimet={() => setNdryshimet(NDRYSHIMET)}
+            dosja={dosja}
+            menyra={menyra}
+            hapjaEPare={hapjaEPare}
+            perfundo={() => {
+              setHapjaEPare(false);
+              shko("printimi");
+            }}
+            shkarkimiDesktop={SHKARKIMI_DESKTOP}
+            perparesiteEDesktopit={PERPARESITE_E_DESKTOPIT}
+          />
         )}
       </main>
 

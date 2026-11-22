@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Col, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faArrowRight, faArrowsRotate, faCheck, faClockRotateLeft, faEraser, faDownload, faFileExcel, faFilePdf, faFolderOpen, faPen, faPenToSquare, faPlus, faRotateLeft, faTableColumns, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
@@ -14,12 +14,15 @@ import { normalizoShabllonin, pergatitImazhet, pershkrimiLetres, rrjetaEShabllon
 import { KATEGORITE_E_SHABLLONEVE, SHABLLONET_E_GATSHME, nenkategoriteE } from "./lib/qmimore/shabllonetEGatshme";
 import { emriShtetit, flamuriSiDataUrl, flamuriSiPng, ngarkoFlamujt } from "./lib/qmimore/origjina";
 import { flamuriPngBardhEZi, shablloniBardhEZi } from "./lib/qmimore/bardhEZi";
-import { fletaEParazgjedhur, ngarkoFontetEQmimores, planiFletes, vizatoQmimoren } from "./lib/qmimore/qmimorjaPdf";
+import { fletaEParazgjedhur, ngarkoFontetEQmimores, planiFletes, vizatoQmimoren, ndajSipasRastit } from "./lib/qmimore/qmimorjaPdf";
 
 const TE_MIAT = "temiat";
 
 // Termikët (80/58 mm) mbeten te FinanCare-i: këtu printohet vetëm në A4 nga printeri i Windows-it.
 const GATI = SHABLLONET_E_GATSHME.filter((g) => !shablloniTermik(g.shablloni));
+// "Automatik me shabllone": çelësi i zgjedhjes dhe shabllonet e parazgjedhura për çdo rast.
+const AUTO_SH = "auto:shabllone";
+const AUTO_PARAZGJEDHJE = { klasike: "gati:raft585", zbritje: "gati:zbritjeRaft", shumice: "gati:shumice" };
 const SHABLLONET_GATI = Object.fromEntries(
   GATI.map((g) => [`gati:${g.celesi}`, { emri: g.emri, pershkrimi: g.pershkrimi, shablloni: g.shablloni, kategoria: g.kategoria, nenkategoria: g.nenkategoria }])
 );
@@ -53,6 +56,14 @@ const SkicaShabllonit = ({ shablloni }) => {
 const euro = (v) => (v == null ? "-" : `${Number(v).toFixed(2)}€`);
 
 // Fusha e redaktimit te tabela: ruan tekstin siç shkruhet ("1," / bosh), produkti rillogaritet nga ai.
+// Opsion që ndizet/fiket si chip i vogël (te Opsionet), me ✓ kur është i ndezur.
+const CelesiOpsionit = ({ emri, shpjegimi, ndezur, ndrysho }) => (
+  <button type="button" role="switch" aria-checked={Boolean(ndezur)} title={shpjegimi} className={`ql-chip ql-chip--vogel lb-op-celesi${ndezur ? " aktiv" : ""}`} onClick={() => ndrysho(!ndezur)}>
+    <span className="lb-op-shenja" aria-hidden="true">{ndezur ? "✓" : ""}</span>
+    {emri}
+  </button>
+);
+
 const Qeliza = ({ vlera, onNdrysho, numer = false, gjeresia, ...tjera }) => (
   <Form.Control
     size="sm"
@@ -106,8 +117,11 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const [flamujt, setFlamujt] = useState({});
   const [flamujtPng, setFlamujtPng] = useState({});
   const [flamujtBZ, setFlamujtBZ] = useState({}); // flamujt për printerin bardh e zi
+  // Flamujt e tabelës si data URL - një herë për shtet, jo në çdo rresht në çdo vizatim.
+  const flamujtUrl = useMemo(() => Object.fromEntries(Object.entries(flamujt).map(([k, svg]) => [k, svg ? flamuriSiDataUrl(svg) : ""])), [flamujt]);
   const [data, setData] = useState(dataESotme);
   const [parapamja, setParapamja] = useState(null);
+  const [fletaEPare, setFletaEPare] = useState(null); // PDF me fletën e parë (hapi i printimit)
   const [pdf, setPdf] = useState(null);
   const [poGjenerohet, setPoGjenerohet] = useState(false);
   const [tabi, setTabi] = useState("");
@@ -393,6 +407,39 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     return k ? produktetEFletes.filter((p) => `${p.name} ${p.barcode} ${p.code}`.toLowerCase().includes(k)) : produktetEFletes;
   }, [produktetEFletes, kerkimi]);
 
+  // Tabela vizaton vetëm rreshtat që duken (+ disa sipër/poshtë): me mijëra produkte (p.sh. 2351) çdo rresht ka fusha,
+  // checkbox dhe flamur - të gjitha njëherësh e bllokonin programin dhe lëvizjen. Hapësirat sipër/poshtë mbajnë
+  // lartësinë e plotë, që shiriti i lëvizjes të jetë i saktë.
+  const tabelaRef = useRef(null);
+  const [dritarja, setDritarja] = useState({ lart: 0, lartesia: 900 });
+  const [lartesiaRreshtit, setLartesiaRreshtit] = useState(52);
+  const rafiLevizjes = useRef(0);
+  const vendosTabelen = useCallback((el) => {
+    tabelaRef.current = el;
+    if (el) setDritarja({ lart: el.scrollTop, lartesia: el.clientHeight || 900 });
+  }, []);
+  const neLevizje = (e) => {
+    const el = e.currentTarget;
+    cancelAnimationFrame(rafiLevizjes.current);
+    rafiLevizjes.current = requestAnimationFrame(() => setDritarja({ lart: el.scrollTop, lartesia: el.clientHeight || 900 }));
+  };
+  const RRESHTA_SHTESE = 12;
+  const fillimiIRreshtave = Math.min(Math.max(0, Math.floor(dritarja.lart / lartesiaRreshtit) - RRESHTA_SHTESE), Math.max(0, teDukshmit.length - 1));
+  const fundiIRreshtave = Math.min(teDukshmit.length, Math.ceil((dritarja.lart + dritarja.lartesia) / lartesiaRreshtit) + RRESHTA_SHTESE);
+  const rreshtatNeEkran = useMemo(() => teDukshmit.slice(fillimiIRreshtave, fundiIRreshtave), [teDukshmit, fillimiIRreshtave, fundiIRreshtave]);
+  // Lartësia e vërtetë e rreshtit (me hapësirën mes rreshtave) matet pas vizatimit.
+  useLayoutEffect(() => {
+    const rreshtat = tabelaRef.current?.querySelectorAll("tbody tr[data-rr]");
+    if (!rreshtat || rreshtat.length < 2) return;
+    const h = rreshtat[1].offsetTop - rreshtat[0].offsetTop;
+    if (h > 10 && Math.abs(h - lartesiaRreshtit) > 0.5) setLartesiaRreshtit(h);
+  });
+  // Fletë tjetër ose kërkim i ri: tabela kthehet në krye.
+  useEffect(() => {
+    if (tabelaRef.current) tabelaRef.current.scrollTop = 0;
+    setDritarja((d) => ({ ...d, lart: 0 }));
+  }, [fletaAktive, kerkimi]);
+
   const ndryshoZgjedhjen = (nr, zgjedhur) =>
     setTeHequrat((t) => {
       const s = new Set(t[fletaAktive] || []);
@@ -461,7 +508,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   // Shablloni i fletës: zgjedhja e ruajtur, ndryshe sugjerimi sipas emrit të fletës.
   const celesiAktiv = useMemo(() => {
     const iRuajtur = cilesimet.shabllonetSipasFletes?.[fletaAktive];
-    if (shabllonet[iRuajtur]) return iRuajtur;
+    if (shabllonet[iRuajtur] || iRuajtur === AUTO_SH) return iRuajtur;
     const s = shablloniISugjeruar(fletaAktive);
     if (s.startsWith("kategoria:")) return tabet.find((t) => t.celesi === s.slice(10))?.celesat[0] || Object.keys(shabllonet)[0];
     return shabllonet[s] ? s : Object.keys(shabllonet)[0];
@@ -486,7 +533,23 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const nenkategorite = tabiAktiv && tabiAktiv.celesi !== TE_MIAT ? nenkategoriteE(tabiAktiv.celesi) : [];
   const celesatETabit = (tabiAktiv?.celesat || []).filter((c) => !nenTabi || !nenkategorite.includes(nenTabi) || shabllonet[c]?.nenkategoria === nenTabi);
 
-  const shablloniAktiv = shabllonet[celesiAktiv]?.shablloni || null;
+  // "Automatik me shabllone": një shabllon për çdo rast (normal / zbritje / shumicë), çdo grup në fletët e veta.
+  const meAutomatik = celesiAktiv === AUTO_SH;
+  const shablloneA4 = useMemo(() => Object.keys(shabllonet).filter((c) => planiFletes(shabllonet[c].shablloni)), [shabllonet]);
+  const zgjedhjetAuto = useMemo(() => {
+    const ruajtur = cilesimet.automatikMeShabllone || {};
+    return Object.fromEntries(
+      Object.entries(AUTO_PARAZGJEDHJE).map(([rasti, parazgjedhur]) => [rasti, shablloneA4.includes(ruajtur[rasti]) ? ruajtur[rasti] : shablloneA4.includes(parazgjedhur) ? parazgjedhur : shablloneA4[0]])
+    );
+  }, [cilesimet.automatikMeShabllone, shablloneA4]);
+  const numriSipasRastit = useMemo(() => {
+    if (!meAutomatik) return {};
+    const g = ndajSipasRastit(produktetPerPrintim);
+    return Object.fromEntries(Object.entries(g).map(([rasti, lista]) => [rasti, lista.length]));
+  }, [meAutomatik, produktetPerPrintim]);
+  const ndryshoZgjedhjenAuto = (rasti, celesi) => ndryshoCilesimet({ automatikMeShabllone: { ...zgjedhjetAuto, [rasti]: celesi } });
+  const emriIShabllonit = meAutomatik ? "Automatik me shabllone" : shabllonet[celesiAktiv]?.emri || "";
+  const shablloniAktiv = (meAutomatik ? shabllonet[zgjedhjetAuto.klasike]?.shablloni : shabllonet[celesiAktiv]?.shablloni) || null;
   const [shablloniGati, setShablloniGati] = useState(null);
   useEffect(() => {
     let aktiv = true;
@@ -539,6 +602,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       bardhEZi: cilesimet.bardhEZi !== false,
       shfaqShtetin: cilesimet.shfaqShtetin !== false,
       zmadhoNeVendinELire: cilesimet.zmadhoNeVendinELire !== false,
+      barkodiNeMes: cilesimet.barkodiNeMes !== false,
+      numratMeTeLarte: cilesimet.numratMeTeLarte === true,
       vijatEPrerjes: cilesimet.vijatEPrerjes === true || cilesimet.vijatEPrerjes === false ? cilesimet.vijatEPrerjes : null,
       stiliQmimit: cilesimet.stiliQmimit === "dhjetore" ? "dhjetore" : "centet",
       tekstet: { data },
@@ -553,7 +618,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       // Shfletuesi: korrigjimi i printerit futet në PDF (në desktop e bën printimi direkt).
       ...(eshteDesktop ? {} : { zhvendosjaX: kalibrimiI(cilesimet.kalibrimet, PRINTERI_I_SHFLETUESIT).x, zhvendosjaY: kalibrimiI(cilesimet.kalibrimet, PRINTERI_I_SHFLETUESIT).y }),
     }),
-    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.bardhEZi, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, cilesimet.kalibrimet, data, flamujtPng, flamujtBZ, fontet, shablloniGati, shablloniAktiv]
+    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.bardhEZi, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.barkodiNeMes, cilesimet.numratMeTeLarte, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, cilesimet.kalibrimet, data, flamujtPng, flamujtBZ, fontet, shablloniGati, shablloniAktiv]
   );
 
   /* ---------- Historiku i printimeve: e njëjta çmimore s'printohet dy herë pa e ditur ---------- */
@@ -565,8 +630,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const indeksi = useMemo(() => indeksoHistorikun(historiku), [historiku]);
   // Gjurma varet vetëm nga ajo që del në letër (jo nga fontet/flamujt që ngarkohen).
   const opsionetEGjurmes = useMemo(
-    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, bz: opsionet.bardhEZi, sh: opsionet.shfaqShtetin, zv: opsionet.zmadhoNeVendinELire, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
-    [opsionet]
+    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, bz: opsionet.bardhEZi, sh: opsionet.shfaqShtetin, zv: opsionet.zmadhoNeVendinELire, bm: opsionet.barkodiNeMes, nl: opsionet.numratMeTeLarte, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina, a: meAutomatik ? zgjedhjetAuto : null }),
+    [opsionet, meAutomatik, zgjedhjetAuto]
   );
   const [gjurmet, setGjurmet] = useState(null); // { puna, etiketat } për produktet aktuale
   useEffect(() => {
@@ -626,18 +691,60 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     return () => clearTimeout(t);
   }, [fontet, produktiParapamjes, opsionet]);
 
+  // Hapi i printimit: fleta e parë A4 me etiketat e saj (vetëm sa nxë një fletë - shpejt edhe me mijëra produkte).
+  useEffect(() => {
+    if (hapi !== 3 || fontet === undefined || !opsionet.shablloni || !produktetPerPrintim.length) {
+      setFletaEPare(null);
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      try {
+        setFletaEPare(vizatoQmimoren(produktetPerPrintim.slice(0, Math.max(1, perFaqe)), opsionet).output("blob"));
+      } catch (err) {
+        console.error("Fleta e parë s'u shfaq:", err);
+        setFletaEPare(null);
+      }
+    }, 150);
+    return () => clearTimeout(t);
+  }, [hapi, fontet, opsionet, produktetPerPrintim, perFaqe]);
+
   const gjeneroPdf = async () => {
     setPoGjenerohet(true);
     try {
       const g = await gjurmetEPunes(shablloniAktiv, opsionetEGjurmes, produktet);
       const krijo = async () => {
-        const sh = await pergatitImazhet(shablloniAktiv);
-        const doc = vizatoQmimoren(produktetPerPrintim, { ...opsionet, shablloni: opsionet.bardhEZi ? await shablloniBardhEZi(sh) : sh });
+        const gati = async (shabllon) => {
+          const sh = await pergatitImazhet(shabllon);
+          return opsionet.bardhEZi ? shablloniBardhEZi(sh) : sh;
+        };
+        let doc;
+        if (meAutomatik) {
+          // Çdo rast me shabllonin e vet; rregullimet e fletës = parazgjedhja e shabllonit + ndryshimet e ruajtura për të.
+          const sipasRastit = ndajSipasRastit(produktetPerPrintim);
+          const grupet = [];
+          for (const rasti of Object.keys(AUTO_PARAZGJEDHJE)) {
+            const celesi = zgjedhjetAuto[rasti];
+            if (!sipasRastit[rasti].length || !shabllonet[celesi]) continue;
+            const sh = shabllonet[celesi].shablloni;
+            const rr = { ...fletaEParazgjedhur(sh), ...(cilesimet.fletaSipasShabllonit?.[celesi] || {}) };
+            grupet.push({
+              shablloni: await gati(sh),
+              products: sipasRastit[rasti],
+              orientimi: rr.orientimi || "auto",
+              hapesiraH: Number(rr.hapesiraH) || 0,
+              hapesiraV: Number(rr.hapesiraV) || 0,
+              margjina: Number(rr.margjina) || 0,
+            });
+          }
+          doc = vizatoQmimoren(produktetPerPrintim, { ...opsionet, grupet });
+        } else {
+          doc = vizatoQmimoren(produktetPerPrintim, { ...opsionet, shablloni: await gati(shablloniAktiv) });
+        }
         uRegjistrua.current = false;
         setPdf({
           blob: doc.output("blob"),
           filename: `${fletaAktive || "Qmimorja"} ${new Date().toISOString().slice(0, 10)}.pdf`,
-          puna: { puna: g.puna, etiketat: g.etiketat, fleta: fletaAktive, shablloni: shabllonet[celesiAktiv]?.emri || "", numri: produktetPerPrintim.length },
+          puna: { puna: g.puna, etiketat: g.etiketat, fleta: fletaAktive, shablloni: emriIShabllonit, numri: produktetPerPrintim.length },
         });
       };
       const rec = indeksi.sipasPunes.get(g.puna);
@@ -704,7 +811,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
             <span className="text-white-50 small text-truncate">
               Fleta "{fletaAktive}" · {produktetPerPrintim.length} etiketa
             </span>
-            {shablloniAktiv && <span className="text-white-50 small text-truncate">{shabllonet[celesiAktiv]?.emri}</span>}
+            {shablloniAktiv && <span className="text-white-50 small text-truncate">{emriIShabllonit}</span>}
           </div>
         </aside>
 
@@ -839,14 +946,16 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                 {numriINdryshimeve > 0 && (
                   <div className="ql-shenim ql-shenim--info d-flex justify-content-between align-items-center gap-2 mb-2">
                     <span>
-                      {numriINdryshimeve} produkte të ndryshuara ose të shtuara këtu - vlejnë vetëm për printim, Excel-i mbetet siç është.
+                      {numriINdryshimeve === 1
+                        ? "1 produkt i ndryshuar ose i shtuar këtu - vlen vetëm për printim, Excel-i mbetet siç është."
+                        : `${numriINdryshimeve} produkte të ndryshuara ose të shtuara këtu - vlejnë vetëm për printim, Excel-i mbetet siç është.`}
                     </span>
                     <button type="button" className="btn btn-link p-0 text-info lb-lidhje text-nowrap" onClick={hiqTeGjithaNdryshimet}>
                       Rikthe si në Excel
                     </button>
                   </div>
                 )}
-                <div className="sp-table-container custom-scrollbar" style={{ maxHeight: "calc(100vh - 330px)", minHeight: 240, overflowY: "auto" }}>
+                <div ref={vendosTabelen} onScroll={neLevizje} className="sp-table-container custom-scrollbar" style={{ maxHeight: "calc(100vh - 330px)", minHeight: 240, overflowY: "auto" }}>
                   <Table hover variant="dark" size="sm" className="sp-table mb-0">
                     <thead>
                       <tr>
@@ -880,8 +989,14 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                           </td>
                         </tr>
                       ) : (
-                        teDukshmit.map((p) => (
-                          <tr key={p.nr} className={`${p.gabim && !redaktim ? "opacity-50" : ""}${p.ndryshuar ? " lb-ndryshuar" : ""}`} title={p.gabim || undefined}>
+                        <>
+                        {fillimiIRreshtave > 0 && (
+                          <tr className="lb-hapesira" aria-hidden="true" style={{ height: fillimiIRreshtave * lartesiaRreshtit }}>
+                            <td colSpan={11} />
+                          </tr>
+                        )}
+                        {rreshtatNeEkran.map((p) => (
+                          <tr key={p.nr} data-rr="" className={`${p.gabim && !redaktim ? "opacity-50" : ""}${p.ndryshuar ? " lb-ndryshuar" : ""}`} title={p.gabim || undefined}>
                             <td>
                               <Form.Check type="checkbox" disabled={Boolean(p.gabim)} checked={!p.gabim && !teHequrat_.has(p.nr)} onChange={(e) => ndryshoZgjedhjen(p.nr, e.target.checked)} />
                             </td>
@@ -978,7 +1093,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                                 </Form.Select>
                               ) : p.origin ? (
                                 <span className="d-inline-flex align-items-center gap-2">
-                                  {flamujt[p.origin] && <img src={flamuriSiDataUrl(flamujt[p.origin])} alt="" width={20} height={13} style={{ borderRadius: 2 }} />}
+                                  {flamujtUrl[p.origin] && <img src={flamujtUrl[p.origin]} alt="" width={20} height={13} style={{ borderRadius: 2 }} />}
                                   {emriShtetit(p.origin)}
                                 </span>
                               ) : (
@@ -1004,7 +1119,13 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                               </>
                             )}
                           </tr>
-                        ))
+                        ))}
+                        {fundiIRreshtave < teDukshmit.length && (
+                          <tr className="lb-hapesira" aria-hidden="true" style={{ height: (teDukshmit.length - fundiIRreshtave) * lartesiaRreshtit }}>
+                            <td colSpan={11} />
+                          </tr>
+                        )}
+                        </>
                       )}
                     </tbody>
                   </Table>
@@ -1055,6 +1176,35 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                   </div>
                 )}
                 <div className="ql-dizajnet lb-dizajnet">
+                  {tabiAktiv?.celesi === "raft" && (
+                    <div className={`ql-zgjedhja lb-auto-shabllone${meAutomatik ? " aktiv" : ""}`} role="button" tabIndex={0} onClick={() => !meAutomatik && zgjidhShabllonin(AUTO_SH)} onKeyDown={(e) => e.key === "Enter" && zgjidhShabllonin(AUTO_SH)}>
+                      <div className="w-100">
+                        <div className="ql-zgjedhja-emri">Automatik me shabllone</div>
+                        <div className="ql-zgjedhja-pershkrimi">Shablloni juaj për çdo rast - çdo grup del në fletët e veta, njëri pas tjetrit.</div>
+                        {meAutomatik && (
+                          <div className="lb-auto-zgjedhjet mt-2" onClick={(e) => e.stopPropagation()}>
+                            {[
+                              ["klasike", "Normal"],
+                              ["zbritje", "Me zbritje"],
+                              ["shumice", "Me shumicë"],
+                            ].map(([rasti, emri]) => (
+                              <label key={rasti} className="d-flex align-items-center gap-2 small">
+                                <span className="lb-auto-rasti">{emri}</span>
+                                <Form.Select size="sm" value={zgjedhjetAuto[rasti] || ""} onChange={(e) => ndryshoZgjedhjenAuto(rasti, e.target.value)}>
+                                  {shablloneA4.map((c) => (
+                                    <option key={c} value={c}>
+                                      {shabllonet[c].emri}
+                                    </option>
+                                  ))}
+                                </Form.Select>
+                                <span className="text-white-50 text-nowrap">{numriSipasRastit[rasti]}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {celesatETabit.map((c) => (
                     <button key={c} type="button" className={`ql-zgjedhja${c === celesiAktiv ? " aktiv" : ""}`} onClick={() => zgjidhShabllonin(c)}>
                       <SkicaShabllonit shablloni={shabllonet[c].shablloni} />
@@ -1077,10 +1227,11 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
             {hapi === 2 && (
               <Row className="g-4">
                 <Col xl={7}>
-              <div className="ql-seksioni">
-                <div className="ql-titulli-seksionit">Opsionet</div>
-                <div className="d-flex align-items-center gap-3 flex-wrap">
-                  <div className="ql-chips">
+              {/* Opsionet në kartela të vogla (Çmimi, Etiketa, Printeri, Fleta) me chips që ndizen/fiken - jo switch-e të mëdha. */}
+              <div className="lb-opsionet">
+                <section className="lb-op-kartela">
+                  <div className="ql-titulli-seksionit">Çmimi</div>
+                  <div className="ql-chips mb-2">
                     {[
                       ["centet", <>39<sup>93</sup> €</>],
                       ["dhjetore", "39.93 €"],
@@ -1090,124 +1241,135 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                       </button>
                     ))}
                   </div>
-                </div>
+                  <div className="ql-chips">
+                    {[
+                      ["shfaqEuro", "Simboli €", "Pa €, çmimi del më i madh"],
+                      ["zmadhoNeVendinELire", "Sa më i madh", "Çmimi zë gjithë hapësirën bosh të etiketës (deri te skaji dhe elementet e tjera), edhe vendin e barkodit / flamurit / shtetit kur i fikni"],
+                      ["numratMeTeLarte", "Numrat më të lartë", "Kur ka vend bosh sipër/poshtë çmimit, shifrat ngushtohen pak (deri 80%) dhe dalin më të larta"],
+                    ].map(([celesi, emri, shpjegimi]) => (
+                      <CelesiOpsionit key={celesi} emri={emri} shpjegimi={shpjegimi} ndezur={opsionet[celesi]} ndrysho={(v) => ndryshoCilesimet({ [celesi]: v })} />
+                    ))}
+                  </div>
+                </section>
+
+                <section className="lb-op-kartela">
+                  <div className="ql-titulli-seksionit">Etiketa</div>
+                  <div className="ql-chips mb-2">
+                    {[
+                      ["shfaqBarkodin", "Barkodi", "Vijat dhe numri i barkodit"],
+                      ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
+                      ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
+                      ["barkodiNeMes", "Barkodi në mes pa flamur", "Kur produkti s'ka origjinë, barkodi zbret në mes të vendit të flamurit/shtetit - çmimi s'lëviz"],
+                    ].map(([celesi, emri, shpjegimi]) => (
+                      <CelesiOpsionit key={celesi} emri={emri} shpjegimi={shpjegimi} ndezur={opsionet[celesi]} ndrysho={(v) => ndryshoCilesimet({ [celesi]: v })} />
+                    ))}
+                  </div>
+                  {!formati.veqmas && (
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <span className="small text-white-50" title="Vijat e zeza rreth etiketave, për prerje me gërshërë">
+                        Vijat e prerjes:
+                      </span>
+                      <div className="ql-chips">
+                        {[
+                          [null, "Sipas shabllonit"],
+                          [true, "Po"],
+                          [false, "Jo"],
+                        ].map(([vlera, emri]) => (
+                          <button key={emri} type="button" className={`ql-chip ql-chip--vogel${opsionet.vijatEPrerjes === vlera ? " aktiv" : ""}`} onClick={() => ndryshoCilesimet({ vijatEPrerjes: vlera })}>
+                            {emri}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+
                 {/* Lloji i printerit: shumica e printerave në dyqane janë bardh e zi (parazgjedhja). */}
-                <div className="d-flex align-items-center gap-2 mt-3 flex-wrap">
-                  <span className="small text-white-50">Printeri:</span>
+                <section className="lb-op-kartela">
+                  <div className="ql-titulli-seksionit">Printeri</div>
                   <div className="ql-chips">
                     {[
                       [true, "Bardh e zi", "Flamujt me kontrast (shqiponja e zezë në të bardhë) dhe ngjyrat në të zezë / gri / të bardhë"],
                       [false, "Me ngjyra", "Etiketat me ngjyrat origjinale"],
                     ].map(([vlera, emri, shpjegimi]) => (
-                      <button
-                        key={emri}
-                        type="button"
-                        title={shpjegimi}
-                        className={`ql-chip ql-chip--vogel${opsionet.bardhEZi === vlera ? " aktiv" : ""}`}
-                        onClick={() => ndryshoCilesimet({ bardhEZi: vlera })}
-                      >
+                      <button key={emri} type="button" title={shpjegimi} className={`ql-chip ql-chip--vogel${opsionet.bardhEZi === vlera ? " aktiv" : ""}`} onClick={() => ndryshoCilesimet({ bardhEZi: vlera })}>
                         {emri}
                       </button>
                     ))}
                   </div>
-                </div>
-                <div className="lb-celesat mt-3">
-                  {[
-                    ["shfaqBarkodin", "Barkodi", "Vijat dhe numri i barkodit"],
-                    ["shfaqEuro", "Simboli €", "Pa €, çmimi del më i madh"],
-                    ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
-                    ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
-                    ["zmadhoNeVendinELire", "Çmimi sa më i madh", "Çmimi zë gjithë hapësirën bosh të etiketës (deri te skaji dhe elementet e tjera), edhe vendin e barkodit / flamurit / shtetit kur i fikni"],
-                  ].map(([celesi, emri, shpjegimi]) => (
-                    <Form.Check
-                      key={celesi}
-                      type="switch"
-                      id={`lb-${celesi}`}
-                      className="small mb-0"
-                      title={shpjegimi}
-                      label={emri}
-                      checked={opsionet[celesi]}
-                      onChange={(e) => ndryshoCilesimet({ [celesi]: e.target.checked })}
-                    />
-                  ))}
-                  {!formati.veqmas && (
-                    <Form.Select
-                      size="sm"
-                      style={{ width: "auto" }}
-                      title="Vijat e zeza rreth etiketave, për prerje me gërshërë"
-                      value={opsionet.vijatEPrerjes == null ? "" : opsionet.vijatEPrerjes ? "po" : "jo"}
-                      onChange={(e) => ndryshoCilesimet({ vijatEPrerjes: e.target.value === "" ? null : e.target.value === "po" })}
-                    >
-                      <option value="">Vijat e prerjes: sipas shabllonit</option>
-                      <option value="po">Vijat e prerjes: po</option>
-                      <option value="jo">Vijat e prerjes: jo</option>
-                    </Form.Select>
+                  {meDate && (
+                    <Form.Group className="mt-2">
+                      <Form.Label className="small text-white-50 mb-1">Periudha / data në etiketë</Form.Label>
+                      <Form.Control size="sm" value={data} maxLength={60} placeholder="p.sh. 01.10 – 07.10.2026" onChange={(e) => setData(e.target.value)} />
+                    </Form.Group>
                   )}
-                </div>
-                <div>
-                  {!formati.veqmas && (
-                    <div className="d-flex align-items-center gap-2 mt-2">
-                      <span className="small text-white-50">Orientimi i fletës:</span>
-                      <Form.Select size="sm" style={{ width: "auto" }} value={rregullimi.orientimi || "auto"} onChange={(e) => ndryshoRregullimin({ orientimi: e.target.value })}>
-                        <option value="auto">Automatik (më shumë etiketa)</option>
-                        <option value="portret">Portret</option>
-                        <option value="peisazh">Peisazh</option>
-                      </Form.Select>
+                </section>
+
+                {!formati.veqmas && (
+                  <section className="lb-op-kartela lb-op-fleta">
+                    <div className="ql-titulli-seksionit d-flex justify-content-between align-items-center gap-2">
+                      <span>Fleta A4</span>
                       {/* Rregullimet e fletës ruhen për këtë shabllon; pa ndryshime vlen parazgjedhja e tij. */}
                       {ndryshimetERregullimit ? (
-                        <button type="button" className="ql-chip ql-chip--vogel" title="Hapësirat, margjina dhe orientimi të parazgjedhura për këtë shabllon (sa më shumë etiketa në A4)" onClick={riktheRregullimin}>
-                          Rikthe parazgjedhjen e shabllonit
+                        <button type="button" className="btn btn-link p-0 text-info lb-lidhje" title="Hapësirat, margjina dhe orientimi të parazgjedhura për këtë shabllon (sa më shumë etiketa në A4)" onClick={riktheRregullimin}>
+                          Rikthe parazgjedhjen
                         </button>
                       ) : (
-                        <span className="small text-white-50">parazgjedhja e shabllonit</span>
+                        <span className="lb-lidhje text-white-50 fw-normal">parazgjedhja e shabllonit</span>
                       )}
                     </div>
-                  )}
-                </div>
-                {plani && !formati.veqmas && Math.min(plani.anash, plani.lartPoshte) < 4 && (
-                  <div className="ql-shenim small mt-2">
-                    Etiketat dalin {Math.min(plani.anash, plani.lartPoshte).toFixed(1)} mm nga skaji i letrës. Shumica e printerave s'printojnë 3-5 mm te
-                    skaji, ndaj rreshti/kolona e skajit mund të pritet: zgjidhni margjinë 4-5 mm, ose kalibroni printerin te Cilësimet → Printeri.
-                  </div>
-                )}
-                {meDate && (
-                  <Form.Control className="mt-2" size="sm" value={data} maxLength={60} placeholder="Periudha e ofertës, p.sh. 01.10 – 07.10.2026" onChange={(e) => setData(e.target.value)} />
-                )}
-                {!formati.veqmas && (
-                  <div className="mt-2">
-                    {[
-                      ["hapesiraH", "Hapësira horizontale", "mes kolonave"],
-                      ["hapesiraV", "Hapësira vertikale", "mes rreshtave"],
-                      ["margjina", "Margjina minimale", "nga skaji i letrës", MARGJINAT],
-                    ].map(([celesi, emri, shpjegimi, vlerat]) => (
-                      <div key={celesi} className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                        <span className="small text-white-50" style={{ minWidth: 150 }} title={shpjegimi}>
-                          {emri}:
-                        </span>
-                        <div className="ql-chips">
-                          {(vlerat || HAPESIRAT).map((mm) => (
-                            <button
-                              key={mm}
-                              type="button"
-                              title={
-                                celesi === "margjina"
-                                  ? mm
-                                    ? `Të paktën ${mm} mm ${shpjegimi} në çdo anë - zgjidhet orientimi me më shumë etiketa dhe rrjeta vihet në mes`
-                                    : "Etiketat mund të shkojnë deri në skaj të letrës - nxë më shumë, por shumica e printerave s'printojnë 3-4 mm te skaji"
-                                  : mm
-                                    ? `${mm} mm bosh ${shpjegimi} - çdo etiketë mbetet me përmasat e veta`
-                                    : `Etiketat ngjitur ${shpjegimi}`
-                              }
-                              className={`ql-chip ql-chip--vogel${opsionet[celesi] === mm ? " aktiv" : ""}`}
-                              onClick={() => ndryshoRregullimin({ [celesi]: mm })}
-                            >
-                              {mm ? `${mm} mm` : celesi === "margjina" ? "Pa margjina" : "Pa hapësirë"}
-                            </button>
-                          ))}
-                        </div>
+                    <div className="lb-op-rreshtat">
+                      <span className="small text-white-50">Orientimi</span>
+                      <div className="ql-chips">
+                        {[
+                          ["auto", "Automatik", "Orientimi me më shumë etiketa në fletë"],
+                          ["portret", "Portret", ""],
+                          ["peisazh", "Peisazh", ""],
+                        ].map(([vlera, emri, shpjegimi]) => (
+                          <button key={vlera} type="button" title={shpjegimi || undefined} className={`ql-chip ql-chip--vogel${(rregullimi.orientimi || "auto") === vlera ? " aktiv" : ""}`} onClick={() => ndryshoRregullimin({ orientimi: vlera })}>
+                            {emri}
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      {[
+                        ["hapesiraH", "Mes kolonave", "mes kolonave"],
+                        ["hapesiraV", "Mes rreshtave", "mes rreshtave"],
+                        ["margjina", "Margjina", "nga skaji i letrës", MARGJINAT],
+                      ].map(([celesi, emri, shpjegimi, vlerat]) => (
+                        <Fragment key={celesi}>
+                          <span className="small text-white-50">{emri}</span>
+                          <div className="ql-chips">
+                            {(vlerat || HAPESIRAT).map((mm) => (
+                              <button
+                                key={mm}
+                                type="button"
+                                title={
+                                  celesi === "margjina"
+                                    ? mm
+                                      ? `Të paktën ${mm} mm ${shpjegimi} në çdo anë - zgjidhet orientimi me më shumë etiketa dhe rrjeta vihet në mes`
+                                      : "Etiketat mund të shkojnë deri në skaj të letrës - nxë më shumë, por shumica e printerave s'printojnë 3-4 mm te skaji"
+                                    : mm
+                                      ? `${mm} mm bosh ${shpjegimi} - çdo etiketë mbetet me përmasat e veta`
+                                      : `Etiketat ngjitur ${shpjegimi}`
+                                }
+                                className={`ql-chip ql-chip--vogel${opsionet[celesi] === mm ? " aktiv" : ""}`}
+                                onClick={() => ndryshoRregullimin({ [celesi]: mm })}
+                              >
+                                {mm ? `${mm}` : "0"}
+                              </button>
+                            ))}
+                            <span className="small text-white-50 align-self-center">mm</span>
+                          </div>
+                        </Fragment>
+                      ))}
+                    </div>
+                    {plani && Math.min(plani.anash, plani.lartPoshte) < 4 && (
+                      <div className="ql-shenim small mt-2 mb-0">
+                        Etiketat dalin {Math.min(plani.anash, plani.lartPoshte).toFixed(1)} mm nga skaji i letrës. Shumica e printerave s'printojnë 3-5 mm te
+                        skaji: zgjidhni margjinë 4-5 mm, ose kalibroni printerin te Cilësimet → Printeri.
+                      </div>
+                    )}
+                  </section>
                 )}
               </div>
                 </Col>
@@ -1229,7 +1391,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                         {produktetPerPrintim.length !== produktet.length ? ` (${produktet.length} produkte, me kopjet)` : ""}
                       </dd>
                       <dt>Shablloni</dt>
-                      <dd>{shabllonet[celesiAktiv]?.emri || "-"}</dd>
+                      <dd>{emriIShabllonit || "-"}</dd>
                       <dt>Letra</dt>
                       <dd>
                         {shablloniAktiv && plani && !formati.veqmas
@@ -1279,7 +1441,14 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                 )}
                   </div>
                 </Col>
-                <Col xl={5}>{parapamjaPamja}</Col>
+                <Col xl={5}>
+                  {fletaEPare ? (
+                    <div className="ql-parapamja">
+                      <div className="ql-titulli-seksionit">Fleta e parë{meAutomatik ? " (produktet normale)" : ""}</div>
+                      <PdfKanvasi blob={fletaEPare} gjeresia={600} emriKlases="lb-fleta-faqe" />
+                    </div>
+                  ) : parapamjaPamja}
+                </Col>
               </Row>
             )}
           </div>

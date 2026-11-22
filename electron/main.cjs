@@ -404,6 +404,20 @@ function krijoDritaren() {
     if (/^https?:/i.test(url)) shell.openExternal(url)
     return { action: 'deny' }
   })
+  // Shkurtoret si te FinanCare: Ctrl+Shift+R rifreskon faqen, F11 ekran i plotë. F12 (DevTools) vetëm në zhvillim
+  // dhe te kopja e testit (build-test.ps1 -> D:\FinanCareTest), jo te programi i klientëve.
+  const meDevTools = !app.isPackaged || /[\\/]FinanCareTest[\\/]/i.test(app.getPath('exe'))
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return
+    const ctrl = input.control || input.meta
+    let veprimi = null
+    if (ctrl && input.shift && !input.alt && input.key.toLowerCase() === 'r') veprimi = () => mainWindow.webContents.reload()
+    else if (!ctrl && !input.alt && input.key === 'F11') veprimi = () => mainWindow.setFullScreen(!mainWindow.isFullScreen())
+    else if (meDevTools && !ctrl && !input.alt && input.key === 'F12') veprimi = () => mainWindow.webContents.toggleDevTools()
+    if (!veprimi) return
+    event.preventDefault()
+    veprimi()
+  })
   mainWindow.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith('app://')) e.preventDefault()
   })
