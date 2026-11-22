@@ -37,28 +37,20 @@ export const eshteCelular = () => typeof window !== "undefined" && window.matchM
 
 // Printimi në shfletues: faqet e PDF-së bëhen imazhe brenda vetë faqes (të fshehura në ekran) dhe thirret print() -
 // del dritarja e vërtetë e printimit e pajisjes (në Android ajo e sistemit, me printerin dhe "Ruaj si PDF"; në
-// kompjuter ajo e shfletuesit). S'varet nga lexuesi i PDF-ve: më parë celulari e hapte PDF-në në një skedë pa printim.
-// @page jep madhësinë dhe orientimin e letrës (A4 portret/peisazh), pa margjina.
-export const printoNeShfletues = async (blob, neProgres) => {
+// kompjuter ajo e shfletuesit). S'varet nga lexuesi i PDF-ve. @page jep madhësinë dhe orientimin (A4 portret/peisazh).
+//
+// Përgatitja (imazhet) bëhet PARA prekjes së "Printo": celulari (Chrome Android, Safari) e lejon print() vetëm
+// drejtpërdrejt nga prekja - pas disa sekondash përgatitjeje e injoronte. pergatitPrintimin() kthen { printo, pastro };
+// printo() thirret sinkron te klikimi.
+export const pergatitPrintimin = async (blob, neProgres) => {
   const { faqet, w, h } = await faqetPerPrintim(blob, neProgres, { dpi: eshteCelular() ? 200 : 300, siBlob: true });
   const afer = (a, b) => Math.abs(a - b) < 1.5;
   const letra = afer(w, 297) && afer(h, 210) ? "A4 landscape" : afer(w, 210) && afer(h, 297) ? "A4 portrait" : `${w.toFixed(1)}mm ${h.toFixed(1)}mm`;
-  document.getElementById("lb-printimi")?.remove();
-  document.getElementById("lb-printimi-stili")?.remove();
+  const id = `lb-printimi-${Date.now().toString(36)}`;
   const stili = document.createElement("style");
-  stili.id = "lb-printimi-stili";
-  stili.textContent = `
-    #lb-printimi { display: none; }
-    @page { size: ${letra}; margin: 0; }
-    @media print {
-      html, body { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; background: #fff !important; }
-      body > *:not(#lb-printimi) { display: none !important; }
-      #lb-printimi { display: block !important; }
-      #lb-printimi img { display: block; width: ${w.toFixed(2)}mm; height: ${(h - 0.5).toFixed(2)}mm; break-after: page; page-break-after: always; }
-      #lb-printimi img:last-child { break-after: auto; page-break-after: auto; }
-    }`;
   const mbajtesi = document.createElement("div");
-  mbajtesi.id = "lb-printimi";
+  mbajtesi.id = id;
+  mbajtesi.className = "lb-printimi";
   const imazhet = faqet.map((src) => {
     const img = document.createElement("img");
     img.src = src;
@@ -66,25 +58,58 @@ export const printoNeShfletues = async (blob, neProgres) => {
     mbajtesi.appendChild(img);
     return img;
   });
-  document.head.appendChild(stili);
-  document.body.appendChild(mbajtesi);
   await Promise.all(imazhet.map((img) => img.decode().catch(() => {})));
   let pastruar = false;
-  const pastro = () => {
-    if (pastruar) return;
-    pastruar = true;
-    window.removeEventListener("afterprint", vonese);
-    mbajtesi.remove();
-    stili.remove();
-    faqet.forEach((u) => URL.revokeObjectURL(u));
+  return {
+    // true kur u hap dritarja e printimit; false kur shfletuesi s'e hap (p.sh. shfletuesi brenda WhatsApp/Instagram).
+    printo: () =>
+      new Promise((ok) => {
+        if (pastruar) return ok(false);
+        // Vetëm ky printim është aktiv: @page dhe imazhet e tij.
+        document.querySelectorAll(".lb-printimi, .lb-printimi-stili").forEach((el) => el !== mbajtesi && el !== stili && el.remove());
+        stili.className = "lb-printimi-stili";
+        stili.textContent = `
+          .lb-printimi { display: none; }
+          @page { size: ${letra}; margin: 0; }
+          @media print {
+            html, body { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; background: #fff !important; }
+            body > *:not(#${id}) { display: none !important; }
+            #${id} { display: block !important; }
+            #${id} img { display: block; width: ${w.toFixed(2)}mm; height: ${(h - 0.5).toFixed(2)}mm; break-after: page; page-break-after: always; }
+            #${id} img:last-child { break-after: auto; page-break-after: auto; }
+          }`;
+        if (!stili.isConnected) document.head.appendChild(stili);
+        if (!mbajtesi.isConnected) document.body.appendChild(mbajtesi);
+        let uHap = false;
+        const hapur = () => {
+          uHap = true;
+        };
+        window.addEventListener("beforeprint", hapur, { once: true });
+        const fillimi = Date.now();
+        try {
+          window.print();
+        } catch {
+          /* s'mbështetet */
+        }
+        // Në kompjuter print() pret mbylljen e dritares (zgjat > 0.5 s); në celular "beforeprint" vjen menjëherë.
+        const priti = Date.now() - fillimi > 500;
+        setTimeout(() => {
+          window.removeEventListener("beforeprint", hapur);
+          ok(uHap || priti);
+        }, 1200);
+      }),
+    pastro: () => {
+      if (pastruar) return;
+      pastruar = true;
+      mbajtesi.remove();
+      stili.remove();
+      faqet.forEach((u) => URL.revokeObjectURL(u));
+    },
   };
-  // Në celular print() kthehet menjëherë dhe dialogu lexon faqen më vonë: pastrohet pas "afterprint" (+ pak kohë).
-  const vonese = () => setTimeout(pastro, 1500);
-  window.addEventListener("afterprint", vonese);
-  setTimeout(pastro, 10 * 60 * 1000);
-  window.print();
-  return "printim";
 };
+
+export const MESAZHI_PA_PRINTIM =
+  "Ky shfletues s'e hapi dritaren e printimit (p.sh. kur faqja hapet brenda WhatsApp, Instagram ose TikTok). Hapeni faqen në Chrome ose Safari, ose përdorni \"Ndaj\" / \"Ruaj PDF\".";
 
 // Ndarja e PDF-së (WhatsApp, email, aplikacioni i printerit...) - kur pajisja e lejon (zakonisht celulari).
 export const mundetNdarja = () => {
