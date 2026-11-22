@@ -8,7 +8,7 @@ import { faqetPerPrintim } from "../lib/faqetEPdf";
 export { faqetPerPrintim };
 import { eshteDesktop } from "../lib/ruajtja";
 import { kaKalibrim, kalibrimiI, pershkrimiKalibrimit } from "../lib/kalibrimi";
-import { PRINTERI_I_SHFLETUESIT, eshteCelular, mundetNdarja, ndajPdf, printoNeShfletues } from "../lib/shfletuesi";
+import { MESAZHI_PA_PRINTIM, PRINTERI_I_SHFLETUESIT, eshteCelular, mundetNdarja, ndajPdf, pergatitPrintimin } from "../lib/shfletuesi";
 
 const PT_NE_MM = 25.4 / 72;
 // Hapat e zoom-it te dritarja e PDF-së (1 = madhësia reale e letrës).
@@ -179,19 +179,34 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
     );
   };
 
-  // Shfletuesi: dritarja e printimit e shfletuesit (në celular PDF-ja në skedë të re). Korrigjimi i printerit është
-  // tashmë në PDF.
-  const printoWeb = async () => {
-    setDuke("printo");
-    try {
-      await printoNeShfletues(pdf.blob, (n, gjithsej) => setProgresi(`${n}/${gjithsej}`));
-      onUKrye?.("printim");
-    } catch (err) {
-      onMesazh?.("danger", `Printimi s'u hap: ${err?.message || err}. Përdorni "Ruaj PDF".`);
-    } finally {
-      setDuke(null);
-      setProgresi(null);
-    }
+  // Shfletuesi: faqet përgatiten sapo hapet PDF-ja, që "Printo" ta hapë dritaren e printimit direkt nga prekja
+  // (celulari e injoron print()-in pas pritjes). Korrigjimi i printerit është tashmë në PDF.
+  const [printimiWeb, setPrintimiWeb] = useState(null); // { printo, pastro } | null
+  const [progresiWeb, setProgresiWeb] = useState(null);
+  useEffect(() => {
+    setPrintimiWeb(null);
+    if (eshteDesktop || !pdf) return undefined;
+    let aktiv = true;
+    let p = null;
+    pergatitPrintimin(pdf.blob, (n, gjithsej) => aktiv && setProgresiWeb(`${n}/${gjithsej}`))
+      .then((r) => {
+        p = r;
+        if (aktiv) setPrintimiWeb(r);
+        else r.pastro();
+      })
+      .catch((err) => aktiv && onMesazh?.("danger", `Printimi s'u përgatit: ${err?.message || err}. Përdorni "Ruaj PDF".`))
+      .finally(() => aktiv && setProgresiWeb(null));
+    return () => {
+      aktiv = false;
+      p?.pastro();
+    };
+  }, [pdf]); // eslint-disable-line react-hooks/exhaustive-deps
+  const printoWeb = () => {
+    if (!printimiWeb) return;
+    printimiWeb.printo().then((uHap) => {
+      if (uHap) onUKrye?.("printim");
+      else onMesazh?.("danger", MESAZHI_PA_PRINTIM);
+    });
   };
 
   const ndaj = async () => {
@@ -360,9 +375,9 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
           </Button>
         )}
         {!eshteDesktop && (
-          <Button className="btn-save px-4" disabled={Boolean(duke)} onClick={printoWeb}>
-            {duke === "printo" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}
-            {duke === "printo" ? (progresi ? `Duke përgatitur ${progresi}...` : "Duke përgatitur...") : "Printo"}
+          <Button className="btn-save px-4" disabled={Boolean(duke) || !printimiWeb} onClick={printoWeb}>
+            {!printimiWeb ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}
+            {!printimiWeb ? (progresiWeb ? `Duke përgatitur ${progresiWeb}...` : "Duke përgatitur...") : "Printo"}
           </Button>
         )}
         {eshteDesktop && (

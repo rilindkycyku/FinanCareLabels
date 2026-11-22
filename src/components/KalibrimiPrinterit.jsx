@@ -5,7 +5,7 @@ import { faCalculator, faPrint, faRotateLeft } from "@fortawesome/free-solid-svg
 import { faqetPerPrintim, lexoPrinterin } from "./PdfPamja";
 import { GJATESIA, LARGESIA, KALIBRIMI_BOSH, fletaEKalibrimit, kaKalibrim, kalibrimiI, llogaritKalibrimin, pershkrimiKalibrimit } from "../lib/kalibrimi";
 import { eshteDesktop } from "../lib/ruajtja";
-import { PRINTERI_I_SHFLETUESIT, printoNeShfletues } from "../lib/shfletuesi";
+import { MESAZHI_PA_PRINTIM, PRINTERI_I_SHFLETUESIT, pergatitPrintimin } from "../lib/shfletuesi";
 
 // Në shfletues s'dihet printeri: një korrigjim i vetëm (zhvendosja), i futur në PDF; shkallën e jep dritarja e
 // printimit e shfletuesit (100%).
@@ -40,21 +40,38 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
   }, []);
 
   const k = kalibrimiI(kalibrimet, printeri);
+
+  // Shfletuesi: fleta përgatitet paraprakisht (me korrigjimin aktual), që "Printo" ta hapë printimin direkt nga prekja.
+  const [fletaWeb, setFletaWeb] = useState(null);
+  useEffect(() => {
+    if (eshteDesktop) return undefined;
+    let aktiv = true;
+    let p = null;
+    setFletaWeb(null);
+    const t = setTimeout(() => {
+      pergatitPrintimin(fletaEKalibrimit("Shfletuesi", { x: k.x, y: k.y }).output("blob"))
+        .then((r) => {
+          p = r;
+          if (aktiv) setFletaWeb(r);
+          else r.pastro();
+        })
+        .catch((err) => console.error("Fleta e kalibrimit s'u përgatit:", err));
+    }, 300);
+    return () => {
+      aktiv = false;
+      clearTimeout(t);
+      p?.pastro();
+    };
+  }, [k.x, k.y]);
   const ruaj = (iRi) => ndrysho({ kalibrimet: { ...(kalibrimet || {}), [printeri]: iRi } });
   const fushe = (celesi, v) => ruaj({ ...k, [celesi]: numer(v) ?? (celesi === "shkalla" ? 100 : 0) });
 
   const printoFleten = async () => {
-    setDuke(true);
     if (!eshteDesktop) {
-      try {
-        await printoNeShfletues(fletaEKalibrimit("Shfletuesi", { x: k.x, y: k.y }).output("blob"));
-      } catch (err) {
-        mesazh("danger", `Printimi s'u hap: ${err?.message || err}`);
-      } finally {
-        setDuke(false);
-      }
+      if (fletaWeb) fletaWeb.printo().then((uHap) => !uHap && mesazh("danger", MESAZHI_PA_PRINTIM));
       return;
     }
+    setDuke(true);
     try {
       const blob = fletaEKalibrimit(printeri).output("blob");
       const { faqet, w, h } = await faqetPerPrintim(blob);
@@ -111,7 +128,7 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
               <div>
                 <b>Printoni fletën e kalibrimit</b>
                 <div className="small text-white-50 mb-2">A4, me korrigjimin aktual të zbatuar.</div>
-                <Button size="sm" className="btn-save" disabled={duke} onClick={printoFleten}>
+                <Button size="sm" className="btn-save" disabled={duke || (!eshteDesktop && !fletaWeb)} onClick={printoFleten}>
                   {duke ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}
                   Printo fletën e kalibrimit
                 </Button>
