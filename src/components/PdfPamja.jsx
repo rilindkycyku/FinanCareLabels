@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinus, faMagnifyingGlassPlus, faPrint } from "@fortawesome/free-solid-svg-icons";
 import { pdfjsLib } from "../lib/pdfjs";
 import { eshteDesktop } from "../lib/ruajtja";
+import { kaKalibrim, kalibrimiI, pershkrimiKalibrimit } from "../lib/kalibrimi";
 
 const PT_NE_MM = 25.4 / 72;
 // Hapat e zoom-it te dritarja e PDF-së (1 = madhësia reale e letrës).
@@ -11,14 +12,14 @@ const HAPAT_E_ZOOMIT = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 const DPI_PRINTIMI = 300;
 // Printeri i fundit i zgjedhur - vetëm lehtësi për këtë kompjuter.
 const CELESI_PRINTERIT = "financare-labels:printeri";
-const lexoPrinterin = () => {
+export const lexoPrinterin = () => {
   try {
     return localStorage.getItem(CELESI_PRINTERIT);
   } catch {
     return null;
   }
 };
-const ruajPrinterin = (emri) => {
+export const ruajPrinterin = (emri) => {
   try {
     localStorage.setItem(CELESI_PRINTERIT, emri);
   } catch {
@@ -104,7 +105,7 @@ export function PdfKanvasi({ blob, gjeresia = 900, emriKlases = "pdf-faqja", zoo
 }
 
 // Faqet si PNG me DPI_PRINTIMI + madhësia e faqes në mm, për dritaren e printimit.
-const faqetPerPrintim = async (blob, neProgres) => {
+export const faqetPerPrintim = async (blob, neProgres) => {
   const doc = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise;
   try {
     const faqet = [];
@@ -132,7 +133,7 @@ const faqetPerPrintim = async (blob, neProgres) => {
 };
 
 // onUKrye(menyra): thirret kur PDF-ja printohet, ruhet ose hapet jashtë - për historikun e printimeve.
-export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh, onUKrye }) {
+export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh, onUKrye, kalibrimet = null }) {
   const [duke, setDuke] = useState(null); // null | "printo" | "ruaj" | "hap"
   const [progresi, setProgresi] = useState(null);
   // Zoom-i: null = përshtatur në dritare; 1 = madhësia reale. Rikthehet te përshtatja për çdo PDF të re.
@@ -183,6 +184,7 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
     setPrinteri(emri);
     ruajPrinterin(emri);
   };
+  const kalibrimi = kalibrimiI(kalibrimet, printeri);
   const paralajmerimTermik = printeri && letra && letra.w > 90 && eshteTermik(printeri);
   const zoomiAktual = zoom ?? 0.7;
   const zmadho = () => setZoom(HAPAT_E_ZOOMIT.find((z) => z > zoomiAktual + 0.01) ?? HAPAT_E_ZOOMIT[HAPAT_E_ZOOMIT.length - 1]);
@@ -206,7 +208,13 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
     try {
       const { faqet, w, h } = await faqetPerPrintim(pdf.blob, (n, gjithsej) => setProgresi(`${n}/${gjithsej}`));
       setProgresi(null);
-      const r = await window.labels.printoPdf(faqet, Math.round(w * 10) / 10, Math.round(h * 10) / 10, { printeri, kopjet });
+      const r = await window.labels.printoPdf(faqet, Math.round(w * 10) / 10, Math.round(h * 10) / 10, {
+        printeri,
+        kopjet,
+        zhvendosjaX: kalibrimi.x,
+        zhvendosjaY: kalibrimi.y,
+        shkalla: kalibrimi.shkalla,
+      });
       if (r?.ok) {
         onUKrye?.("printim");
         if (printeri) onMesazh?.("success", `U dërgua te ${printeri}${kopjet > 1 ? ` (${kopjet} kopje)` : ""}.`);
@@ -296,6 +304,7 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
                 Letra: {letra.w === 210 && letra.h === 297 ? "A4" : `${letra.w} × ${letra.h} mm`} · pa margjina · madhësia reale (100%)
               </div>
             )}
+            {printeri && kaKalibrim(kalibrimi) && <div className="text-info">Kalibrimi i printerit: {pershkrimiKalibrimit(kalibrimi)}</div>}
             {printerat?.length === 0 && <div className="text-warning">Nuk u gjet asnjë printer i instaluar.</div>}
             {paralajmerimTermik && <div className="text-warning">Ky duket printer kuponash (termik) - fleta {letra.w} mm nuk del e plotë në të.</div>}
             {printeri === DIALOGU_WINDOWS && <div className="text-white-50">Hapet dritarja e Windows-it (pa parapamje) - parapamja është kjo më sipër.</div>}

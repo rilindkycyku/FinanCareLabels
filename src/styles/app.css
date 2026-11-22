@@ -563,3 +563,37 @@ html.ka-shiritin .modal-backdrop {
   top: var(--tb-h);
   height: calc(100% - var(--tb-h));
 }
+
+/* ---------- Lidh kolonat ---------- */
+.lb-lidh { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; }
+@media (max-width: 1100px) { .lb-lidh { grid-template-columns: 1fr; } }
+.lb-lidh-tabela td, .lb-lidh-tabela th { white-space: nowrap; font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.lb-lidh-tabela .lb-lidh-e-lidhur { background: rgba(16, 185, 129, 0.12) !important; }
+.lb-lidh-tabela tr.lb-lidh-titujt td { font-weight: 700; background: rgba(59, 130, 246, 0.15) !important; }
+.lb-lidh-fusha { font-size: 10px; font-weight: 600; color: #10b981; text-transform: none; }
+.lb-celesat { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+
+/* ---------- Kalibrimi i printerit ---------- */
+.lb-kalibrimi-hapat { display: grid; gap: 14px; }
+.lb-kalibrimi-hapat > div { display: flex; gap: 12px; align-items: flex-start; }
+.lb-kalibrimi-nr { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #10b981; }
+
+/* ---------- Udhëzuesi ---------- */
+.lb-udhezuesi { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; height: 100%; min-height: 0; }
+.lb-udh-menyja { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; align-self: start; }
+.lb-udh-menyja button { text-align: left; border: 0; background: transparent; color: var(--sp-text-muted, #94a3b8); padding: 7px 10px; border-radius: 8px; font-size: 13px; }
+.lb-udh-menyja button:hover { background: rgba(148, 163, 184, 0.1); }
+.lb-udh-menyja button.aktiv { background: rgba(16, 185, 129, 0.14); color: #10b981; font-weight: 600; }
+.lb-udh-permbajtja { overflow-y: auto; max-height: calc(100vh - 140px); padding-right: 6px; max-width: 980px; }
+.lb-udh-h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.lb-udh-hapat li { margin-bottom: 6px; }
+
+/* ---------- Tërhiq dhe lësho ---------- */
+.lb-leshimi { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(2px); pointer-events: none; }
+.lb-leshimi > div { border: 3px dashed #10b981; border-radius: 18px; padding: 40px 56px; background: var(--sp-modal-bg, #fff); color: var(--sp-text, #0f172a); text-align: center; font-size: 18px; font-weight: 600; }
+
+/* ---------- Përditësimi ---------- */
+.lb-perditesimi { display: flex; align-items: center; gap: 12px; padding: 8px 18px; background: rgba(16, 185, 129, 0.12); border-bottom: 1px solid rgba(16, 185, 129, 0.35); font-size: 13px; }
+.lb-perditesimi .progress { width: 180px; height: 6px; }
+.lb-ndryshimet h6 { margin-top: 10px; font-weight: 700; }
+.lb-ndryshimet li { margin-bottom: 4px; }

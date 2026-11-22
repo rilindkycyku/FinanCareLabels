@@ -284,7 +284,7 @@ const gjendjaEProduktit = (m, p) => {
       barkodi: String(p.barcode || "").trim(),
       shifra: String(p.code ?? "").trim(),
       njesia: String(p.unit || ""),
-      shteti: m.emriShtetit(p.origin),
+      shteti: m.shfaqShtetin === false ? "" : m.emriShtetit(p.origin),
       data: String(m.tekstet?.data || "").trim() || new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }),
       dyqani: String(m.emriBiznesit || ""),
       viti: String(tani().getFullYear()),
@@ -465,7 +465,7 @@ const vizatoElementin = (m, el, p, g, x, y) => {
       return;
     }
     case "flamur": {
-      if (!p.origin) return;
+      if (!p.origin || m.shfaqFlamurin === false) return;
       const fh = Math.min(h, w / 1.5);
       const fw = fh * 1.5;
       const fx = el.rreshtimi === "right" ? x + w - fw : el.rreshtimi === "center" ? x + (w - fw) / 2 : x;
@@ -622,6 +622,65 @@ export const pergatitImazhet = async (sh, madhesiaPx = 800) => {
   return { ...sh, elementet };
 };
 
+// ---- Vendi i lirë: kur fiken barkodi, flamuri ose shteti (Opsionet), çmimi dhe emri zmadhohen në vendin e tyre ----
+
+const FUSHAT_E_FIKURA = { shteti: "shfaqShtetin", barkodi: "shfaqBarkodin" };
+// Elementi s'del sepse përdoruesi e fiku (jo sepse produktit i mungon vlera): i njëjti vend lirohet te çdo etiketë.
+const uFikMeOpsion = (m, el) => {
+  if (el.lloji === "flamur") return m.shfaqFlamurin === false;
+  if (el.lloji === "barkod") return m.shfaqBarkodin === false;
+  if (el.lloji !== "tekst" && el.lloji !== "qr") return false;
+  const fushat = [...String(el.teksti || "").matchAll(/\{(\w+)\}/g)].map((x) => x[1]);
+  if (!fushat.length || fushat.some((f) => !FUSHAT_E_FIKURA[f])) return false;
+  // Teksti fiket vetëm kur të gjitha fushat e tij janë të fikura dhe s'ka tekst tjetër përveç tyre.
+  return fushat.every((f) => m[FUSHAT_E_FIKURA[f]] === false) && !String(el.teksti).replace(/\{\w+\}/g, "").trim();
+};
+const rritet = (el) =>
+  (el.lloji === "qmimi" && (el.burimi === "aktual" || el.burimi === "rregullt" || !el.burimi)) ||
+  (el.lloji === "tekst" && /\{emri\}/.test(el.teksti || ""));
+const E = 0.25; // mm: elementet që vetëm prekin njëri-tjetrin s'mbivendosen
+const priten = (a, b) => a.x < b.x + b.w - E && b.x < a.x + a.w - E && a.y < b.y + b.h - E && b.y < a.y + a.h - E;
+const permban = (a, b) => a.x <= b.x + E && a.y <= b.y + E && a.x + a.w >= b.x + b.w - E && a.y + a.h >= b.y + b.h - E;
+const mbulimi = (a0, a1, b0, b1) => Math.max(0, Math.min(a1, b1) - Math.max(a0, b0));
+
+// Kutitë e reja (sipas id) për çmimin dhe emrin: zgjerohen drejt elementeve të fikura ngjitur (majtas/djathtas kur
+// ndajnë rreshtin, lart/poshtë kur ndajnë kolonën), pa prekur asnjë element tjetër që del - as kornizat (kutitë
+// që e përmbajnë elementin e kufizojnë). Çmimi ka përparësi para emrit.
+const kutiteMeVendinELire = (m, sh, g) => {
+  if (m.zmadhoNeVendinELire === false) return null;
+  const teDukshmit = sh.elementet.filter((el) => plotesonKushtin(el.kushti, g));
+  const teFikurat = teDukshmit.filter((el) => uFikMeOpsion(m, el));
+  if (!teFikurat.length) return null;
+  const kutite = new Map(teDukshmit.filter((el) => !teFikurat.includes(el)).map((el) => [el, { x: el.x, y: el.y, w: el.w, h: el.h }]));
+  const teRriturit = [...kutite.keys()].filter(rritet).sort((a, b) => (b.lloji === "qmimi") - (a.lloji === "qmimi"));
+  const ndryshimet = new Map();
+  for (const el of teRriturit) {
+    const o = kutite.get(el);
+    const pengesat = [...kutite.entries()].filter(([tj, k]) => tj !== el && !permban(k, o)).map(([, k]) => k);
+    const kornizat = [...kutite.entries()].filter(([tj, k]) => tj !== el && tj.lloji === "kuti" && permban(k, o)).map(([, k]) => k);
+    const lire = (k) =>
+      k.x >= -E && k.y >= -E && k.x + k.w <= sh.w + E && k.y + k.h <= sh.h + E && !pengesat.some((p) => priten(k, p)) && kornizat.every((kk) => permban(kk, k));
+    let k = { ...o };
+    // Horizontalisht: të fikurat në të njëjtin rresht (mbivendosje vertikale ≥ 30%).
+    const rreshti = teFikurat.filter((f) => mbulimi(f.y, f.y + f.h, o.y, o.y + o.h) >= 0.3 * Math.min(f.h, o.h));
+    const majtas = Math.min(...rreshti.filter((f) => f.x + f.w <= o.x + E).map((f) => f.x), k.x);
+    if (majtas < k.x && lire({ ...k, x: majtas, w: k.x + k.w - majtas })) k = { ...k, x: majtas, w: k.x + k.w - majtas };
+    const djathtas = Math.max(...rreshti.filter((f) => f.x >= o.x + o.w - E).map((f) => f.x + f.w), k.x + k.w);
+    if (djathtas > k.x + k.w && lire({ ...k, w: djathtas - k.x })) k = { ...k, w: djathtas - k.x };
+    // Vertikalisht: të fikurat në të njëjtën kolonë me kutinë e re.
+    const kolona = teFikurat.filter((f) => mbulimi(f.x, f.x + f.w, k.x, k.x + k.w) >= 0.3 * Math.min(f.w, k.w));
+    const lart = Math.min(...kolona.filter((f) => f.y < k.y).map((f) => f.y), k.y);
+    if (lart < k.y && lire({ ...k, y: lart, h: k.y + k.h - lart })) k = { ...k, y: lart, h: k.y + k.h - lart };
+    const poshte = Math.max(...kolona.filter((f) => f.y + f.h > k.y + k.h).map((f) => f.y + f.h), k.y + k.h);
+    if (poshte > k.y + k.h && lire({ ...k, h: poshte - k.y })) k = { ...k, h: poshte - k.y };
+    if (k.x !== o.x || k.y !== o.y || k.w !== o.w || k.h !== o.h) {
+      kutite.set(el, k);
+      ndryshimet.set(el, k);
+    }
+  }
+  return ndryshimet.size ? ndryshimet : null;
+};
+
 // Vizaton një etiketë sipas shabllonit, me këndin lart-majtas te (x, y). Elementet vizatohen sipas
 // radhës në listë: i fundit del sipër.
 export const vizatoShabllonin = (m, sh, p, x, y) => {
@@ -630,8 +689,20 @@ export const vizatoShabllonin = (m, sh, p, x, y) => {
     m.doc.setFillColor(...ngjyraRgb(sh.sfondi, [255, 255, 255]));
     m.doc.rect(x, y, sh.w, sh.h, "F");
   }
+  const kutiteERe = kutiteMeVendinELire(m, sh, g);
   for (const el of sh.elementet) {
     if (!plotesonKushtin(el.kushti, g)) continue;
-    vizatoElementin(m, el, p, g, x + el.x, y + el.y);
+    const k = kutiteERe?.get(el);
+    // Madhësia maksimale e shkronjës (madhesia) s'e lë të rritet: në vendin e lirë hiqet kufiri, sipas raportit.
+    // Çmimi i zgjeruar anash del në mes të vendit të ri (ngjitur djathtas linte gjysmën e etiketës bosh).
+    const e = k
+      ? {
+          ...el,
+          ...k,
+          madhesia: el.madhesia > 0 ? el.madhesia * Math.max(k.w / el.w, k.h / el.h) : el.madhesia,
+          ...(el.lloji === "qmimi" && k.w > el.w + 1 ? { rreshtimi: "center" } : {}),
+        }
+      : el;
+    vizatoElementin(m, e, p, g, x + e.x, y + e.y);
   }
 };

@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     FinanCare Labels - Sistemi i Ndertimit (Build System)
-    Nderton vetem Portable (nje exe per USB, pa internet, pa backend).
+    Nderton Setup (instaluesi, per kompjuterin e perditshem) dhe Portable (nje exe per USB), pa internet, pa backend.
 
 .USAGE
     Double-click build.bat ose ekzekuto ne terminal:
@@ -88,7 +88,7 @@ function Show-Success {
     Write-Host "        [OK] $Text ($stepTime)" -ForegroundColor Green
 }
 
-try { $Host.UI.RawUI.WindowTitle = "FinanCare Labels Build [Portable - Duke u ekzekutuar...]" } catch {}
+try { $Host.UI.RawUI.WindowTitle = "FinanCare Labels Build [Setup + Portable - Duke u ekzekutuar...]" } catch {}
 
 # ── RUAJTJA DHE PËRDITËSIMI I VERSIONIT ───────────────────
 $curVer = (Get-Content $pkgPath -Raw | ConvertFrom-Json).version
@@ -101,7 +101,7 @@ if (-not $NoBump) {
 
 Clear-Host
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " FINANCARE LABELS BUILD: PORTABLE" -ForegroundColor Yellow
+Write-Host " FINANCARE LABELS BUILD: SETUP + PORTABLE" -ForegroundColor Yellow
 Write-Host " Versioni:    $curVer" -ForegroundColor Green
 Write-Host " Burimi:      $repoRoot" -ForegroundColor Gray
 Write-Host " Dalja:       $releaseDir" -ForegroundColor Gray
@@ -160,10 +160,13 @@ try {
 
     # ── HAPI 4: PAKETIMI I PORTABLE ───────────────────────
     $swStep = [System.Diagnostics.Stopwatch]::StartNew()
-    Draw-ProgressBar -Percent 60 -StepText "HAPI 4: Paketimi i Portable"
-    npx electron-builder --win portable
-    if ($LASTEXITCODE -ne 0) { throw "Paketimi Portable deshtoi" }
-    Show-Success "Portable u krijua me sukses!" $swStep
+    Draw-ProgressBar -Percent 60 -StepText "HAPI 4: Paketimi i Setup dhe Portable"
+    # Nisesi yne portabel: programi shpaketohet vetem heren e pare te cdo versioni (jo ne cdo hapje).
+    node scripts\nisesi-portabel.mjs
+    if ($LASTEXITCODE -ne 0) { throw "Nisesi portabel nuk u vendos" }
+    npx electron-builder --win nsis portable
+    if ($LASTEXITCODE -ne 0) { throw "Paketimi deshtoi" }
+    Show-Success "Setup dhe Portable u krijuan me sukses! (ngarkoni te dy ne GitHub Release)" $swStep
 } finally {
     Pop-Location
 }
@@ -173,7 +176,7 @@ Draw-ProgressBar -Percent 100 -StepText "Verifikimi i skedareve te perfunduara"
 Write-Progress -Activity "FinanCare Labels Build" -Completed
 
 $totalSeconds = [math]::Round($swTotal.Elapsed.TotalSeconds, 1)
-try { $Host.UI.RawUI.WindowTitle = "FinanCare Labels Build [Portable - PERFUNDOI ($totalSeconds s)]" } catch {}
+try { $Host.UI.RawUI.WindowTitle = "FinanCare Labels Build [Setup + Portable - PERFUNDOI ($totalSeconds s)]" } catch {}
 try { [System.Console]::Beep(1200, 200) } catch {}
 
 Write-Host ""

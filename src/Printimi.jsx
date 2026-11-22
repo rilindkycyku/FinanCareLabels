@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Col, Form, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faArrowRight, faArrowsRotate, faCheck, faClockRotateLeft, faEraser, faDownload, faFileExcel, faFilePdf, faFolderOpen, faPen, faPenToSquare, faPlus, faRotateLeft, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faArrowsRotate, faCheck, faClockRotateLeft, faEraser, faDownload, faFileExcel, faFilePdf, faFolderOpen, faPen, faPenToSquare, faPlus, faRotateLeft, faTableColumns, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import PdfPamja, { PdfKanvasi } from "./components/PdfPamja";
-import { lexoExcelin, meNdryshime, shablloniISugjeruar } from "./lib/excel";
+import LidhKolonat from "./components/LidhKolonat";
+import { FUSHAT, celesiIHartes, lexoExcelin, meNdryshime, shablloniISugjeruar, shkronjaEKolones } from "./lib/excel";
 import { opsionetEOrigjines } from "./lib/qmimore/origjina";
 import { eshteDesktop, lexoProduktet, listaEShablloneve, ruajProduktet } from "./lib/ruajtja";
 import { dataShqip, gjurmetEPunes, indeksoHistorikun, lexoHistorikun, regjistroPunen } from "./lib/historiku";
@@ -72,7 +73,7 @@ const HAPESIRAT = [0, 0.8, 1, 2, 3, 5];
 const MAKS_KOPJE = 99;
 // Marginat e fletës (mm nga skaji); 0 = deri në skaj, si te tagsprinter.com.
 // Margjina minimale nga skaji (mm); rrjeta vihet në mes, ndaj margjina reale del shpesh më e madhe.
-const MARGJINAT = [0, 1, 2, 3, 4, 5];
+const MARGJINAT = [0, 1, 2, 3, 4, 5, 6, 8];
 // Hapat e magjistarit të printimit: [emri, përshkrimi].
 const HAPAT = [
   ["Produktet", "Excel-i, fleta dhe kopjet"],
@@ -110,6 +111,11 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const [hapi, setHapi] = useState(0);
 
   const skedari = cilesimet.skedariExcel;
+  // Lidhjet e kolonave të ruajtura me dorë ("Lidh kolonat"), për Excel-at që s'janë shablloni ynë.
+  const hartat = cilesimet.hartatEKolonave || BOSH;
+  const hartatRef = useRef(hartat);
+  hartatRef.current = hartat;
+  const [lidhja, setLidhja] = useState(null); // fleta që po lidhet
 
   /* ---------- Excel-i ---------- */
 
@@ -121,8 +127,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
         const bajtet = await window.labels.lexoExcel(shtegu);
         if (!bajtet) throw new Error("Skedari nuk u gjet. Zgjidheni përsëri.");
         if (bajtet.gabim) throw new Error(bajtet.gabim);
-        const iRi = lexoExcelin(bajtet);
-        if (!iRi.fletet.length) throw new Error("Asnjë fletë me kolonat Emertimi dhe Cmimi nuk u gjet.");
+        const iRi = lexoExcelin(bajtet, hartatRef.current);
+        if (!iRi.fletet.length) throw new Error("Excel-i është bosh: asnjë fletë me të dhëna.");
         setExcel(iRi);
         setGabimiExcel("");
         setFletaAktive((f) => (iRi.fletet.some((x) => x.emri === f) ? f : (iRi.fletet.find((x) => x.produktet.length) || iRi.fletet[0]).emri));
@@ -141,6 +147,24 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   useEffect(() => {
     lexoSkedarin(skedari);
   }, [skedari, lexoSkedarin]);
+  // Lidhja e re e kolonave: i njëjti Excel rilexohet me të.
+  const hartatEPara = useRef(hartat);
+  useEffect(() => {
+    if (hartatEPara.current === hartat) return;
+    hartatEPara.current = hartat;
+    lexoSkedarin(skedari, { heshtur: true });
+  }, [hartat, skedari, lexoSkedarin]);
+
+  const ruajLidhjen = (celesi, harta) => {
+    ndryshoCilesimet({ hartatEKolonave: { ...hartat, [celesi]: harta } });
+    setLidhja(null);
+    mesazh("success", "Lidhja e kolonave u ruajt - vlen edhe për Excel-at e tjerë me të njëjtat tituj.");
+  };
+  const hiqLidhjen = (f) => {
+    const { [celesiIHartes(f.emri, f.titujt, f.mostra)]: _hequr, ...tjerat } = hartat;
+    ndryshoCilesimet({ hartatEKolonave: tjerat });
+    setLidhja(null);
+  };
 
   // Kthimi nga Excel-i (pas ruajtjes) e rilexon vetë listën.
   useEffect(() => {
@@ -468,6 +492,10 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     () => ({
       shfaqBarkodin: cilesimet.shfaqBarkodin !== false,
       shfaqEuro: cilesimet.shfaqEuro !== false,
+      shfaqFlamurin: cilesimet.shfaqFlamurin !== false,
+      shfaqShtetin: cilesimet.shfaqShtetin !== false,
+      zmadhoNeVendinELire: cilesimet.zmadhoNeVendinELire !== false,
+      vijatEPrerjes: cilesimet.vijatEPrerjes === true || cilesimet.vijatEPrerjes === false ? cilesimet.vijatEPrerjes : null,
       stiliQmimit: cilesimet.stiliQmimit === "dhjetore" ? "dhjetore" : "centet",
       tekstet: { data },
       flamujtPng,
@@ -479,7 +507,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       orientimi: rregullimi.orientimi || "auto",
       margjina: Number(rregullimi.margjina) || 0,
     }),
-    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
+    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
   );
 
   /* ---------- Historiku i printimeve: e njëjta çmimore s'printohet dy herë pa e ditur ---------- */
@@ -491,7 +519,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const indeksi = useMemo(() => indeksoHistorikun(historiku), [historiku]);
   // Gjurma varet vetëm nga ajo që del në letër (jo nga fontet/flamujt që ngarkohen).
   const opsionetEGjurmes = useMemo(
-    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
+    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, sh: opsionet.shfaqShtetin, zv: opsionet.zmadhoNeVendinELire, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
     [opsionet]
   );
   const [gjurmet, setGjurmet] = useState(null); // { puna, etiketat } për produktet aktuale
@@ -707,6 +735,34 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
               </button>
             ))}
           </div>
+          {fleta && !fleta.eMia && (
+            <div className={`ql-shenim ${fleta.titujt && fleta.titujt.menyra !== "permbajtja" ? "ql-shenim--info" : ""} d-flex justify-content-between align-items-center gap-2 mb-3`}>
+              <span className="small">
+                {!fleta.titujt ? (
+                  <>Kolonat e fletës "{fleta.emri}" nuk u njohën (s'ka emër dhe çmim). Lidhini vetë - lidhja ruhet për herët e tjera.</>
+                ) : (
+                  <>
+                    {fleta.titujt.menyra === "permbajtja"
+                      ? "Pa tituj të njohur - kolonat u gjetën sipas përmbajtjes, kontrollojini: "
+                      : fleta.titujt.menyra === "dore"
+                        ? "Kolonat sipas lidhjes suaj: "
+                        : "Kolonat u njohën: "}
+                    {FUSHAT.filter((f) => fleta.titujt.kolonat[f.key] !== undefined && f.key !== "kaZbritje")
+                      .map((f) => {
+                        const k = fleta.titujt.kolonat[f.key];
+                        const titulli = fleta.titujt.rreshti != null ? fleta.mostra[fleta.titujt.rreshti]?.[k] : "";
+                        return `${f.emri} ← ${shkronjaEKolones(fleta.kolonaEPare + k)}${titulli ? ` "${titulli}"` : ""}`;
+                      })
+                      .join(" · ")}
+                  </>
+                )}
+              </span>
+              <Button size="sm" variant="secondary" className={fleta.titujt ? "btn-cancel text-nowrap" : "btn-save text-nowrap"} onClick={() => setLidhja(fleta)}>
+                <FontAwesomeIcon icon={faTableColumns} className="me-2" />
+                Lidh kolonat
+              </Button>
+            </div>
+          )}
               <div className="ql-seksioni">
                 <div className="ql-titulli-seksionit d-flex justify-content-between align-items-center gap-2">
                   <span>
@@ -978,22 +1034,41 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                       </button>
                     ))}
                   </div>
-                  <Form.Check
-                    type="switch"
-                    id="lb-barkodi"
-                    className="text-white-50 small mb-0"
-                    label="Shfaq barkodin"
-                    checked={opsionet.shfaqBarkodin}
-                    onChange={(e) => ndryshoCilesimet({ shfaqBarkodin: e.target.checked })}
-                  />
-                  <Form.Check
-                    type="switch"
-                    id="lb-euro"
-                    className="text-white-50 small mb-0"
-                    label="Shfaq simbolin €"
-                    checked={opsionet.shfaqEuro}
-                    onChange={(e) => ndryshoCilesimet({ shfaqEuro: e.target.checked })}
-                  />
+                </div>
+                <div className="lb-celesat mt-3">
+                  {[
+                    ["shfaqBarkodin", "Barkodi", "Vijat dhe numri i barkodit"],
+                    ["shfaqEuro", "Simboli €", "Pa €, çmimi del më i madh"],
+                    ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
+                    ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
+                    ["zmadhoNeVendinELire", "Zmadho çmimin në vendin e lirë", "Kur fikni barkodin, flamurin ose shtetin, çmimi dhe emri zënë vendin e tyre"],
+                  ].map(([celesi, emri, shpjegimi]) => (
+                    <Form.Check
+                      key={celesi}
+                      type="switch"
+                      id={`lb-${celesi}`}
+                      className="small mb-0"
+                      title={shpjegimi}
+                      label={emri}
+                      checked={opsionet[celesi]}
+                      onChange={(e) => ndryshoCilesimet({ [celesi]: e.target.checked })}
+                    />
+                  ))}
+                  {!formati.veqmas && (
+                    <Form.Select
+                      size="sm"
+                      style={{ width: "auto" }}
+                      title="Vijat e zeza rreth etiketave, për prerje me gërshërë"
+                      value={opsionet.vijatEPrerjes == null ? "" : opsionet.vijatEPrerjes ? "po" : "jo"}
+                      onChange={(e) => ndryshoCilesimet({ vijatEPrerjes: e.target.value === "" ? null : e.target.value === "po" })}
+                    >
+                      <option value="">Vijat e prerjes: sipas shabllonit</option>
+                      <option value="po">Vijat e prerjes: po</option>
+                      <option value="jo">Vijat e prerjes: jo</option>
+                    </Form.Select>
+                  )}
+                </div>
+                <div>
                   {!formati.veqmas && (
                     <div className="d-flex align-items-center gap-2 mt-2">
                       <span className="small text-white-50">Orientimi i fletës:</span>
@@ -1013,6 +1088,12 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     </div>
                   )}
                 </div>
+                {plani && !formati.veqmas && Math.min(plani.anash, plani.lartPoshte) < 4 && (
+                  <div className="ql-shenim small mt-2">
+                    Etiketat dalin {Math.min(plani.anash, plani.lartPoshte).toFixed(1)} mm nga skaji i letrës. Shumica e printerave s'printojnë 3-5 mm te
+                    skaji, ndaj rreshti/kolona e skajit mund të pritet: zgjidhni margjinë 4-5 mm, ose kalibroni printerin te Cilësimet → Printeri.
+                  </div>
+                )}
                 {meDate && (
                   <Form.Control className="mt-2" size="sm" value={data} maxLength={60} placeholder="Periudha e ofertës, p.sh. 01.10 – 07.10.2026" onChange={(e) => setData(e.target.value)} />
                 )}
@@ -1086,7 +1167,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                       <dt>Çmimi</dt>
                       <dd>
                         {opsionet.stiliQmimit === "dhjetore" ? "39.93" : "39⁹³"} · {opsionet.shfaqEuro ? "me €" : "pa €"} ·{" "}
-                        {opsionet.shfaqBarkodin ? "me barkod" : "pa barkod"}
+                        {opsionet.shfaqBarkodin ? "me barkod" : "pa barkod"} · {opsionet.shfaqFlamurin ? "me flamur" : "pa flamur"} ·{" "}
+                        {opsionet.shfaqShtetin ? "me shtet" : "pa shtet"}
                       </dd>
                       {!formati.veqmas && (
                         <>
@@ -1149,7 +1231,15 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
         </div>
       </div>
 
-      <PdfPamja pdf={pdf} titulli={`Çmimorja · ${fletaAktive}`} onHide={() => setPdf(null)} onMesazh={mesazh} onUKrye={regjistro} />
+      <LidhKolonat
+        fleta={lidhja}
+        kaHarteTeRuajtur={lidhja?.titujt?.menyra === "dore"}
+        onRuaj={ruajLidhjen}
+        onHiq={() => hiqLidhjen(lidhja)}
+        onHide={() => setLidhja(null)}
+      />
+
+      <PdfPamja pdf={pdf} kalibrimet={cilesimet.kalibrimet} titulli={`Çmimorja · ${fletaAktive}`} onHide={() => setPdf(null)} onMesazh={mesazh} onUKrye={regjistro} />
 
       <Modal show={pastrimi} onHide={() => setPastrimi(false)} centered className="sp-modal">
         <Modal.Header closeButton>
