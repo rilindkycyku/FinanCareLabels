@@ -1091,6 +1091,26 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     ))}
                   </div>
                 </div>
+                {/* Lloji i printerit: shumica e printerave në dyqane janë bardh e zi (parazgjedhja). */}
+                <div className="d-flex align-items-center gap-2 mt-3 flex-wrap">
+                  <span className="small text-white-50">Printeri:</span>
+                  <div className="ql-chips">
+                    {[
+                      [true, "Bardh e zi", "Flamujt me kontrast (shqiponja e zezë në të bardhë) dhe ngjyrat në të zezë / gri / të bardhë"],
+                      [false, "Me ngjyra", "Etiketat me ngjyrat origjinale"],
+                    ].map(([vlera, emri, shpjegimi]) => (
+                      <button
+                        key={emri}
+                        type="button"
+                        title={shpjegimi}
+                        className={`ql-chip ql-chip--vogel${opsionet.bardhEZi === vlera ? " aktiv" : ""}`}
+                        onClick={() => ndryshoCilesimet({ bardhEZi: vlera })}
+                      >
+                        {emri}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="lb-celesat mt-3">
                   {[
                     ["shfaqBarkodin", "Barkodi", "Vijat dhe numri i barkodit"],
@@ -1098,7 +1118,6 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
                     ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
                     ["zmadhoNeVendinELire", "Zmadho çmimin në vendin e lirë", "Kur fikni barkodin, flamurin ose shtetin, çmimi dhe emri zënë vendin e tyre"],
-                    ["bardhEZi", "Printer bardh e zi", "Flamujt me kontrast (p.sh. shqiponja e zezë në të bardhë) dhe ngjyrat në të zezë / gri / të bardhë - fikeni për printer me ngjyra"],
                   ].map(([celesi, emri, shpjegimi]) => (
                     <Form.Check
                       key={celesi}

@@ -511,6 +511,12 @@ const vizatoElementin = (m, el, p, g, x, y) => {
       const ih = iw / raporti;
       try {
         doc.addImage(el.imazhi, formati.toLowerCase() === "png" ? "PNG" : "JPEG", x + (w - iw) / 2, y + (h - ih) / 2, iw, ih, `sh-${el.id}-${el.imazhi.length}`, "FAST");
+        // Korniza e hollë (flamujt), si te flamuri i origjinës: dallohet edhe kur flamuri del i bardhë në bardh e zi.
+        if (el.kornize) {
+          doc.setDrawColor(203, 213, 225);
+          doc.setLineWidth(Math.min(0.5, Math.max(0.12, Math.min(iw, ih) * 0.012)));
+          doc.rect(x + (w - iw) / 2, y + (h - ih) / 2, iw, ih, "S");
+        }
       } catch (err) {
         console.error("Imazhi i shabllonit nuk u vizatua:", err);
       }
