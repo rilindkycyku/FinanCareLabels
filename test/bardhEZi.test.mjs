@@ -33,6 +33,8 @@ test("ngjyrat e shablloneve", () => {
   assert.equal(ngjyraBardhEZi(148, 163, 184), 110); // gri e çelët → gri (s'zhduket)
   assert.equal(ngjyraBardhEZi(100, 116, 139), 110); // çmimi i vjetër (gri) mbetet gri - vija e prerjes dallohet
   assert.equal(ngjyraBardhEZi(15, 23, 42), 0); // teksti → i zi
+  assert.equal(ngjyraBardhEZi(242, 201, 76), 255); // data e artë mbi kokë → e bardhë
+  assert.equal(ngjyraBardhEZi(224, 40, 127), 0); // koka rozë e Ditëlindjes → e zezë (teksti i bardhë mbi të)
   assert.equal(ngjyraBardhEZi(203, 213, 225, true), 110); // vija e çelët → gri, jo e bardhë
   assert.deepEqual(argumentetBardhEZi(["#ffd966"], false), [255, 255, 255]);
   assert.deepEqual(argumentetBardhEZi([0.5], false), [0.5]);

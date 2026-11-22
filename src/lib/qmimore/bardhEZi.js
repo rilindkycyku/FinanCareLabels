@@ -10,9 +10,11 @@ const ndricimi = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 // Ngjyra e shabllonit (mbushje / tekst) ose e vijës në bardh e zi. Vijat s'bëhen kurrë të bardha (do të zhdukeshin).
 export const ngjyraBardhEZi = (r, g, b, vije = false) => {
   const l = ndricimi(r, g, b);
-  // 100: e kuqja e vulës (≈95) del e zezë, gria e çmimit të vjetër (≈114) mbetet gri - vija e prerjes dallohet mbi të.
-  if (l < 100) return 0;
-  if (vije || l < 205) return 110;
+  // 110: e kuqja e vulës (≈95) dhe kokat rozë/blu të festave (≈105) dalin të zeza (teksti i bardhë dallohet), gria e
+  // çmimit të vjetër (≈114) mbetet gri - vija e prerjes dallohet mbi të.
+  if (l < 110) return 0;
+  // 190: datat dhe titujt e artë/të verdhë mbi kokat e festave (≈199) dalin të bardha mbi të zezën.
+  if (vije || l < 190) return 110;
   return 255;
 };
 
@@ -81,6 +83,21 @@ export const flamuriPngBardhEZi = async (dataUrl) => {
   flamuriNeBardhEZi(d.data);
   ctx.putImageData(d, 0, 0);
   return c.toDataURL("image/png");
+};
+
+// Imazhet e shabllonit (vizatimet e festave: flamuri shqiptar, i Kosovës, lulet...) në bardh e zi, si flamujt.
+// Shablloni duhet të jetë i përgatitur (pergatitImazhet: imazhet si data URL PNG/JPEG). Memoria sipas imazhit.
+const memoriaEImazheve = new Map();
+export const shablloniBardhEZi = async (sh) => {
+  if (!sh?.elementet?.some((el) => el.lloji === "imazh" && /^data:image\/(png|jpe?g)/i.test(el.imazhi || ""))) return sh;
+  const elementet = await Promise.all(
+    sh.elementet.map(async (el) => {
+      if (el.lloji !== "imazh" || !/^data:image\/(png|jpe?g)/i.test(el.imazhi || "")) return el;
+      if (!memoriaEImazheve.has(el.imazhi)) memoriaEImazheve.set(el.imazhi, flamuriPngBardhEZi(el.imazhi).catch(() => el.imazhi));
+      return { ...el, imazhi: await memoriaEImazheve.get(el.imazhi) };
+    })
+  );
+  return { ...sh, elementet };
 };
 
 // Ngjyrat e jsPDF-së (setFillColor / setTextColor / setDrawColor) në bardh e zi: (r, g, b) ose "#rrggbb".
