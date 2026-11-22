@@ -8,13 +8,19 @@ on:
     tags: ["v*"]
   release:
     types: [published]
+  # Nga skeda Actions → Release → "Run workflow": versioni (p.sh. 1.0.2); tag-u krijohet te commit-i i zgjedhur.
+  workflow_dispatch:
+    inputs:
+      versioni:
+        description: "Versioni (p.sh. 1.0.2) - duhet të jetë te src/lib/ndryshimet.js"
+        required: true
 
 permissions:
   contents: write
 
 # Release-i nga GitHub krijon tag-un dhe publikohet njëherësh (dy ngjarje): ndërtohet vetëm një herë për çdo tag.
 concurrency:
-  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  group: release-${{ github.event.release.tag_name || (inputs.versioni && format('v{0}', inputs.versioni)) || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -31,7 +37,7 @@ jobs:
       - name: Versioni nga tag-u
         shell: pwsh
         run: |
-          $v = "${{ github.event.release.tag_name || github.ref_name }}".TrimStart("v")
+          $v = "${{ github.event.release.tag_name || (inputs.versioni && format('v{0}', inputs.versioni)) || github.ref_name }}".TrimStart("v")
           npm version $v --no-git-tag-version --allow-same-version
           "VERSIONI=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
@@ -60,7 +66,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.event.release.tag_name || github.ref_name }}"
+          $tag = "${{ github.event.release.tag_name || (inputs.versioni && format('v{0}', inputs.versioni)) || github.ref_name }}"
           node scripts/shenimet-e-versionit.mjs $env:VERSIONI | Out-File -FilePath shenimet.md -Encoding utf8
           $exe = @("release/FinanCare Labels Setup $env:VERSIONI.exe", "release/FinanCare Labels Portable $env:VERSIONI.exe")
           # Release-i i krijuar me dorë në GitHub (Releases -> Draft a new release) krijon edhe tag-un: këtu vetëm i
@@ -70,5 +76,5 @@ jobs:
             gh release upload $tag @exe --clobber
             gh release edit $tag --title "FinanCare Labels $env:VERSIONI" --notes-file shenimet.md --latest
           } else {
-            gh release create $tag @exe --title "FinanCare Labels $env:VERSIONI" --notes-file shenimet.md --latest
+            gh release create $tag @exe --target "${{ github.sha }}" --title "FinanCare Labels $env:VERSIONI" --notes-file shenimet.md --latest
           }
