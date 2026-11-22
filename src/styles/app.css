@@ -676,3 +676,4 @@ html.ka-shiritin .modal-backdrop {
   .lb-nav button, .ql-chip, .btn-sm { min-height: 36px; }
   .form-check-input { width: 2.4em; height: 1.3em; }
 }
+.lb-desktop-njoftimi { background: rgba(2, 132, 199, 0.08); border-bottom-color: rgba(2, 132, 199, 0.3); }

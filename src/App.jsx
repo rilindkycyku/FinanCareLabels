@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Button, Form, Modal, ProgressBar, Spinner, Toast, ToastContainer } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowsRotate, faBookOpen, faCircleDown, faFileImport, faFolderOpen, faGear, faGift, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
+import { faArrowsRotate, faBookOpen, faCircleDown, faDesktop, faXmark, faFileImport, faFolderOpen, faGear, faGift, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
 import Printimi from "./Printimi";
 import ShiritiITitullit from "./components/ShiritiITitullit";
 // Editori dhe Udhëzuesi ngarkohen kur hapen: hapja e programit lexon vetëm Printimin.
@@ -9,6 +9,7 @@ const Editori = lazy(() => import("./Editori"));
 const Udhezuesi = lazy(() => import("./Udhezuesi"));
 import KalibrimiPrinterit from "./components/KalibrimiPrinterit";
 import { NDRYSHIMET, krahasoVersionet, ndryshimetMes } from "./lib/ndryshimet";
+import { eshteCelular } from "./lib/shfletuesi";
 import { eshteDesktop, lexoCilesimet, ruajCilesimet } from "./lib/ruajtja";
 
 const FAQET = [
@@ -23,6 +24,18 @@ const VERSIONI = typeof __VERSIONI__ === "string" ? __VERSIONI__ : "";
 const EXCEL_RE = /\.(xlsx|xlsm|xls|ods|csv)$/i;
 const SHABLLON_RE = /\.json$/i;
 const madhesia = (b) => `${(b / 1024 / 1024).toFixed(0)} MB`;
+
+// Versioni në shfletues e fton përdoruesin te aplikacioni për Windows (Setup / Portable te GitHub Releases).
+const SHKARKIMI_DESKTOP = "https://github.com/rilindkycyku/FinanCareLabels/releases/latest";
+const PERPARESITE_E_DESKTOPIT = "printim direkt te printeri i zgjedhur me kalibrim të plotë, Excel-i që rilexohet vetë pasi e ruani, dhe punon pa shfletues";
+const CELESI_I_NJOFTIMIT = "financare-labels:desktop-njoftimi-hequr";
+const njoftimiIHequr = () => {
+  try {
+    return localStorage.getItem(CELESI_I_NJOFTIMIT) === "1";
+  } catch {
+    return false;
+  }
+};
 
 export default function App() {
   const [faqja, setFaqja] = useState("printimi");
@@ -41,6 +54,16 @@ export default function App() {
   // Përditësimi: { versioni, shenimet, madhesia, vetvetiu, gjendja: "gati" | "shkarkim" | "shkarkuar" | "gabim", progresi, gabimi }
   const [perditesimi, setPerditesimi] = useState(null);
   const [kontrolli, setKontrolli] = useState(""); // "" | "duke" | teksti i rezultatit (Cilësimet)
+  // Shfletuesi në kompjuter: njoftimi "Shkarko për Windows" (fshihet me ×, mbahet mend në këtë pajisje).
+  const [njoftimiDesktop, setNjoftimiDesktop] = useState(() => !eshteDesktop && !eshteCelular() && !njoftimiIHequr());
+  const hiqNjoftimin = () => {
+    setNjoftimiDesktop(false);
+    try {
+      localStorage.setItem(CELESI_I_NJOFTIMIT, "1");
+    } catch {
+      /* s'ka rëndësi */
+    }
+  };
 
   useEffect(() => {
     lexoCilesimet().then(setCilesimet);
@@ -231,6 +254,22 @@ export default function App() {
         </button>
       </header>
 
+      {njoftimiDesktop && (
+        <div className="lb-perditesimi lb-desktop-njoftimi">
+          <FontAwesomeIcon icon={faDesktop} className="text-success" />
+          <span>
+            <b>FinanCare Labels për Windows</b> është më i mirë për punën e përditshme: {PERPARESITE_E_DESKTOPIT}.
+          </span>
+          <a className="btn btn-sm btn-save text-nowrap" href={SHKARKIMI_DESKTOP} target="_blank" rel="noopener noreferrer">
+            <FontAwesomeIcon icon={faCircleDown} className="me-2" />
+            Shkarko
+          </a>
+          <button type="button" className="btn btn-link btn-sm p-0 ms-auto text-white-50" title="Mos e shfaq më" aria-label="Mos e shfaq më" onClick={hiqNjoftimin}>
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+      )}
+
       {perditesimi && (
         <div className="lb-perditesimi">
           <FontAwesomeIcon icon={faCircleDown} className="text-success" />
@@ -306,6 +345,19 @@ export default function App() {
                 <option value="dark">E errët</option>
               </Form.Select>
             </Form.Group>
+            {!eshteDesktop && (
+              <>
+                <div className="ql-titulli-seksionit mt-4">Aplikacioni për Windows</div>
+                <div className="text-white-50 small mb-2">
+                  Për punën e përditshme në kompjuter, shkarkoni FinanCare Labels për Windows: {PERPARESITE_E_DESKTOPIT}. "Setup" instalohet (pa leje
+                  administratori), "Portable" punon pa instalim nga USB. Shabllonet i merrni me shkarkimin e tyre te Editori.
+                </div>
+                <a className="btn btn-sm btn-save" href={SHKARKIMI_DESKTOP} target="_blank" rel="noopener noreferrer">
+                  <FontAwesomeIcon icon={faDesktop} className="me-2" />
+                  Shkarko për Windows
+                </a>
+              </>
+            )}
             <div className="ql-titulli-seksionit mt-4">Printeri</div>
             <KalibrimiPrinterit kalibrimet={cilesimet.kalibrimet} ndrysho={ndryshoCilesimet} mesazh={mesazh} />
             <div className="ql-titulli-seksionit mt-4">Përditësimet</div>
