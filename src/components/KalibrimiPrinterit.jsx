@@ -47,8 +47,9 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
     setDuke(true);
     if (!eshteDesktop) {
       try {
-        const r = await printoNeShfletues(fletaEKalibrimit("Shfletuesi", { x: k.x, y: k.y }).output("blob"));
-        if (r === "bllokuar") mesazh("danger", "Shfletuesi e bllokoi skedën e re - lejoni dritaret (pop-up).");
+        await printoNeShfletues(fletaEKalibrimit("Shfletuesi", { x: k.x, y: k.y }).output("blob"));
+      } catch (err) {
+        mesazh("danger", `Printimi s'u hap: ${err?.message || err}`);
       } finally {
         setDuke(false);
       }

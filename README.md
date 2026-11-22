@@ -26,7 +26,7 @@ Excel-i ose CSV-ja hapet edhe duke e **tërhequr në dritare**; shablloni `.qmim
 
 E njëjta ndërfaqe punon edhe pa Electron (`window.labels` mungon): Excel-i zgjidhet ose lëshohet në faqe dhe mbahet në
 IndexedDB (`src/lib/shfletuesi.js`), shabllonet dhe cilësimet në localStorage, printimi bëhet me dritaren e printimit të
-shfletuesit (në celular PDF-ja hapet në skedë të re) dhe kalibrimi (vetëm zhvendosja) futet në vetë PDF-në. Faqja
+shfletuesit (faqet bëhen imazhe brenda faqes dhe thirret print(): në Android del dritarja e printimit e sistemit; "Ndaj" e dërgon PDF-në) dhe kalibrimi (vetëm zhvendosja) futet në vetë PDF-në. Faqja
 përshtatet për celular dhe instalohet si PWA (`public/manifest.webmanifest`, `public/sw.js` - punon pa internet pas
 hapjes së parë). Publikohet në Vercel nga `main` me `vercel.json` (pa shkarkuar Electron-in).
 

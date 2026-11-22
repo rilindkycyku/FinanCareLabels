@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinus, faMagnifyingGlassPlus, faPrint } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpRightFromSquare, faExpand, faFloppyDisk, faMagnifyingGlassMinus, faMagnifyingGlassPlus, faPrint, faShareNodes } from "@fortawesome/free-solid-svg-icons";
 import { pdfjsLib } from "../lib/pdfjs";
+import { faqetPerPrintim } from "../lib/faqetEPdf";
+
+export { faqetPerPrintim };
 import { eshteDesktop } from "../lib/ruajtja";
 import { kaKalibrim, kalibrimiI, pershkrimiKalibrimit } from "../lib/kalibrimi";
-import { PRINTERI_I_SHFLETUESIT, eshteCelular, printoNeShfletues } from "../lib/shfletuesi";
+import { PRINTERI_I_SHFLETUESIT, eshteCelular, mundetNdarja, ndajPdf, printoNeShfletues } from "../lib/shfletuesi";
 
 const PT_NE_MM = 25.4 / 72;
 // Hapat e zoom-it te dritarja e PDF-së (1 = madhësia reale e letrës).
 const HAPAT_E_ZOOMIT = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
-const DPI_PRINTIMI = 300;
 // Printeri i fundit i zgjedhur - vetëm lehtësi për këtë kompjuter.
 const CELESI_PRINTERIT = "financare-labels:printeri";
 export const lexoPrinterin = () => {
@@ -105,33 +107,6 @@ export function PdfKanvasi({ blob, gjeresia = 900, emriKlases = "pdf-faqja", zoo
   return <div ref={ref} />;
 }
 
-// Faqet si PNG me DPI_PRINTIMI + madhësia e faqes në mm, për dritaren e printimit.
-export const faqetPerPrintim = async (blob, neProgres) => {
-  const doc = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise;
-  try {
-    const faqet = [];
-    let permasat = null;
-    for (let n = 1; n <= doc.numPages; n++) {
-      neProgres?.(n, doc.numPages);
-      const faqja = await doc.getPage(n);
-      const baza = faqja.getViewport({ scale: 1 });
-      if (!permasat) permasat = { w: baza.width * PT_NE_MM, h: baza.height * PT_NE_MM };
-      const viewport = faqja.getViewport({ scale: DPI_PRINTIMI / 72 });
-      const c = document.createElement("canvas");
-      c.width = Math.round(viewport.width);
-      c.height = Math.round(viewport.height);
-      const ctx = c.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, c.width, c.height);
-      await faqja.render({ canvasContext: ctx, viewport }).promise;
-      faqet.push(c.toDataURL("image/png"));
-      c.width = 0;
-    }
-    return { faqet, ...permasat };
-  } finally {
-    doc.destroy();
-  }
-};
 
 // onUKrye(menyra): thirret kur PDF-ja printohet, ruhet ose hapet jashtë - për historikun e printimeve.
 export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh, onUKrye, kalibrimet = null }) {
@@ -209,9 +184,22 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
   const printoWeb = async () => {
     setDuke("printo");
     try {
-      const r = await printoNeShfletues(pdf.blob);
-      if (r === "bllokuar") onMesazh?.("danger", "Shfletuesi e bllokoi skedën e re - lejoni dritaret (pop-up) ose përdorni \"Ruaj PDF\".");
-      else onUKrye?.("printim");
+      await printoNeShfletues(pdf.blob, (n, gjithsej) => setProgresi(`${n}/${gjithsej}`));
+      onUKrye?.("printim");
+    } catch (err) {
+      onMesazh?.("danger", `Printimi s'u hap: ${err?.message || err}. Përdorni "Ruaj PDF".`);
+    } finally {
+      setDuke(null);
+      setProgresi(null);
+    }
+  };
+
+  const ndaj = async () => {
+    setDuke("ndaj");
+    try {
+      const r = await ndajPdf(pdf.blob, pdf.filename);
+      if (r === "ndare") onUKrye?.("pdf");
+      else if (r === "gabim") onMesazh?.("danger", "Ndarja s'u bë - përdorni \"Ruaj PDF\".");
     } finally {
       setDuke(null);
     }
@@ -289,7 +277,7 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
         <div className="pdf-printimi small text-white-50">
           <div>
             {eshteCelular()
-              ? "\"Printo\" e hap PDF-në: printojeni ose ndajeni prej aty (p.sh. te printeri Wi-Fi). Zgjidhni A4 dhe madhësinë reale (100%), jo \"Fit\"."
+              ? "\"Printo\" hap dritaren e printimit të telefonit: zgjidhni printerin (ose \"Ruaj si PDF\"), letrën A4 dhe madhësinë 100%. \"Ndaj\" e dërgon PDF-në (WhatsApp, email, aplikacioni i printerit)."
               : "Te dritarja e printimit zgjidhni: Margjinat - Asnjë (None), Shkalla - 100% / Madhësia reale, jo \"Fit to page\"."}
             {kaKalibrim(kalibrimiI(kalibrimet, PRINTERI_I_SHFLETUESIT)) && (
               <span className="text-info"> Kalibrimi: {pershkrimiKalibrimit(kalibrimiI(kalibrimet, PRINTERI_I_SHFLETUESIT))}.</span>
@@ -365,10 +353,16 @@ export default function PdfPamja({ pdf, titulli = "Çmimorja", onHide, onMesazh,
           {duke === "ruaj" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faFloppyDisk} className="me-2" />}
           Ruaj PDF
         </Button>
+        {!eshteDesktop && mundetNdarja() && (
+          <Button variant="secondary" className="btn-cancel px-3" disabled={Boolean(duke)} onClick={ndaj} title="Dërgoje PDF-në (WhatsApp, email, aplikacioni i printerit)">
+            {duke === "ndaj" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faShareNodes} className="me-2" />}
+            Ndaj
+          </Button>
+        )}
         {!eshteDesktop && (
           <Button className="btn-save px-4" disabled={Boolean(duke)} onClick={printoWeb}>
             {duke === "printo" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faPrint} className="me-2" />}
-            Printo
+            {duke === "printo" ? (progresi ? `Duke përgatitur ${progresi}...` : "Duke përgatitur...") : "Printo"}
           </Button>
         )}
         {eshteDesktop && (
