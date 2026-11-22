@@ -4,6 +4,7 @@ import { jsPDF } from "jspdf";
 import JsBarcode from "jsbarcode";
 import { emriShtetit } from "./origjina";
 import { rrjetaEShabllonit, vizatoShabllonin } from "./shablloniQmimores";
+import { argumentetBardhEZi } from "./bardhEZi";
 
 // Margjina e fletës A4 kur rrjeta e shabllonit s'e mbush faqen (shih fundin e vizatoQmimoren).
 const MARGJINA = 5;
@@ -195,6 +196,8 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     // Korrigjimi i printerit në shfletues (mm): rrjeta zhvendoset djathtas/poshtë; në desktop e bën printimi direkt.
     zhvendosjaX = 0,
     zhvendosjaY = 0,
+    // Printeri bardh e zi: çdo ngjyrë e vizatimit kthehet në të zezë / gri / të bardhë (flamujt i përgatit thirrësi).
+    bardhEZi = false,
     orientimi = "auto",
     margjina = SIGURIA_SKAJIT,
   } = opsionet;
@@ -215,6 +218,12 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     ? new jsPDF({ orientation: w > h ? "l" : "p", unit: "mm", format: [w, h] })
     : new jsPDF(plani ? plani.orientimi : "p", "mm", "a4");
   const sf = doc.internal.scaleFactor;
+  if (bardhEZi) {
+    for (const [metoda, vije] of [["setFillColor", false], ["setTextColor", false], ["setDrawColor", true]]) {
+      const origjinali = doc[metoda].bind(doc);
+      doc[metoda] = (...a) => origjinali(...argumentetBardhEZi(a, vije));
+    }
+  }
 
   const mbushFaqenBardhe = () => {
     const pageW = doc.internal.pageSize.getWidth();

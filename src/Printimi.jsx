@@ -13,6 +13,7 @@ import { dataShqip, gjurmetEPunes, indeksoHistorikun, lexoHistorikun, regjistroP
 import { normalizoShabllonin, pergatitImazhet, pershkrimiLetres, rrjetaEShabllonit, shablloniKaZbritje, shablloniTermik } from "./lib/qmimore/shablloniQmimores";
 import { KATEGORITE_E_SHABLLONEVE, SHABLLONET_E_GATSHME, nenkategoriteE } from "./lib/qmimore/shabllonetEGatshme";
 import { emriShtetit, flamuriSiDataUrl, flamuriSiPng, ngarkoFlamujt } from "./lib/qmimore/origjina";
+import { flamuriPngBardhEZi } from "./lib/qmimore/bardhEZi";
 import { fletaEParazgjedhur, ngarkoFontetEQmimores, planiFletes, vizatoQmimoren } from "./lib/qmimore/qmimorjaPdf";
 
 const TE_MIAT = "temiat";
@@ -104,6 +105,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const [fontet, setFontet] = useState(undefined);
   const [flamujt, setFlamujt] = useState({});
   const [flamujtPng, setFlamujtPng] = useState({});
+  const [flamujtBZ, setFlamujtBZ] = useState({}); // flamujt për printerin bardh e zi
   const [data, setData] = useState(dataESotme);
   const [parapamja, setParapamja] = useState(null);
   const [pdf, setPdf] = useState(null);
@@ -515,9 +517,13 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     let aktiv = true;
     const lista = kodet.split(",");
     ngarkoFlamujt(lista).then((f) => aktiv && setFlamujt((x) => ({ ...x, ...f })));
-    Promise.all(lista.map(async (k) => [k, await flamuriSiPng(k, 240).catch(() => null)])).then(
-      (c) => aktiv && setFlamujtPng((x) => ({ ...x, ...Object.fromEntries(c.filter(([, png]) => png)) }))
-    );
+    Promise.all(lista.map(async (k) => [k, await flamuriSiPng(k, 240).catch(() => null)])).then(async (c) => {
+      if (!aktiv) return;
+      const teMira = c.filter(([, png]) => png);
+      setFlamujtPng((x) => ({ ...x, ...Object.fromEntries(teMira) }));
+      const bz = await Promise.all(teMira.map(async ([k, png]) => [k, await flamuriPngBardhEZi(png).catch(() => png)]));
+      if (aktiv) setFlamujtBZ((x) => ({ ...x, ...Object.fromEntries(bz) }));
+    });
     return () => {
       aktiv = false;
     };
@@ -528,12 +534,14 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       shfaqBarkodin: cilesimet.shfaqBarkodin !== false,
       shfaqEuro: cilesimet.shfaqEuro !== false,
       shfaqFlamurin: cilesimet.shfaqFlamurin !== false,
+      // Shumica e printerave në dyqane janë bardh e zi: parazgjedhja.
+      bardhEZi: cilesimet.bardhEZi !== false,
       shfaqShtetin: cilesimet.shfaqShtetin !== false,
       zmadhoNeVendinELire: cilesimet.zmadhoNeVendinELire !== false,
       vijatEPrerjes: cilesimet.vijatEPrerjes === true || cilesimet.vijatEPrerjes === false ? cilesimet.vijatEPrerjes : null,
       stiliQmimit: cilesimet.stiliQmimit === "dhjetore" ? "dhjetore" : "centet",
       tekstet: { data },
-      flamujtPng,
+      flamujtPng: cilesimet.bardhEZi !== false ? flamujtBZ : flamujtPng,
       fontet,
       shablloni: shablloniGati || shablloniAktiv,
       emriBiznesit: cilesimet.emriBiznesit || "",
@@ -544,7 +552,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
       // Shfletuesi: korrigjimi i printerit futet në PDF (në desktop e bën printimi direkt).
       ...(eshteDesktop ? {} : { zhvendosjaX: kalibrimiI(cilesimet.kalibrimet, PRINTERI_I_SHFLETUESIT).x, zhvendosjaY: kalibrimiI(cilesimet.kalibrimet, PRINTERI_I_SHFLETUESIT).y }),
     }),
-    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, cilesimet.kalibrimet, data, flamujtPng, fontet, shablloniGati, shablloniAktiv]
+    [cilesimet.shfaqBarkodin, cilesimet.shfaqEuro, cilesimet.shfaqFlamurin, cilesimet.bardhEZi, cilesimet.shfaqShtetin, cilesimet.zmadhoNeVendinELire, cilesimet.vijatEPrerjes, cilesimet.stiliQmimit, cilesimet.emriBiznesit, rregullimi.hapesiraH, rregullimi.hapesiraV, rregullimi.orientimi, rregullimi.margjina, cilesimet.kalibrimet, data, flamujtPng, flamujtBZ, fontet, shablloniGati, shablloniAktiv]
   );
 
   /* ---------- Historiku i printimeve: e njëjta çmimore s'printohet dy herë pa e ditur ---------- */
@@ -556,7 +564,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const indeksi = useMemo(() => indeksoHistorikun(historiku), [historiku]);
   // Gjurma varet vetëm nga ajo që del në letër (jo nga fontet/flamujt që ngarkohen).
   const opsionetEGjurmes = useMemo(
-    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, sh: opsionet.shfaqShtetin, zv: opsionet.zmadhoNeVendinELire, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
+    () => ({ b: opsionet.shfaqBarkodin, e: opsionet.shfaqEuro, f: opsionet.shfaqFlamurin, bz: opsionet.bardhEZi, sh: opsionet.shfaqShtetin, zv: opsionet.zmadhoNeVendinELire, vp: opsionet.vijatEPrerjes, s: opsionet.stiliQmimit, d: opsionet.tekstet.data, n: opsionet.emriBiznesit, h: opsionet.hapesiraH, v: opsionet.hapesiraV, o: opsionet.orientimi, m: opsionet.margjina }),
     [opsionet]
   );
   const [gjurmet, setGjurmet] = useState(null); // { puna, etiketat } për produktet aktuale
@@ -1088,6 +1096,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
                     ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
                     ["zmadhoNeVendinELire", "Zmadho çmimin në vendin e lirë", "Kur fikni barkodin, flamurin ose shtetin, çmimi dhe emri zënë vendin e tyre"],
+                    ["bardhEZi", "Printer bardh e zi", "Flamujt me kontrast (p.sh. shqiponja e zezë në të bardhë) dhe ngjyrat në të zezë / gri / të bardhë - fikeni për printer me ngjyra"],
                   ].map(([celesi, emri, shpjegimi]) => (
                     <Form.Check
                       key={celesi}
@@ -1214,7 +1223,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                       <dd>
                         {opsionet.stiliQmimit === "dhjetore" ? "39.93" : "39⁹³"} · {opsionet.shfaqEuro ? "me €" : "pa €"} ·{" "}
                         {opsionet.shfaqBarkodin ? "me barkod" : "pa barkod"} · {opsionet.shfaqFlamurin ? "me flamur" : "pa flamur"} ·{" "}
-                        {opsionet.shfaqShtetin ? "me shtet" : "pa shtet"}
+                        {opsionet.shfaqShtetin ? "me shtet" : "pa shtet"} · {opsionet.bardhEZi ? "bardh e zi" : "me ngjyra"}
                       </dd>
                       {!formati.veqmas && (
                         <>
