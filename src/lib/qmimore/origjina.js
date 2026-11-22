@@ -224,15 +224,19 @@ export const GS1_PREFIKSET = [
  * Zbulon shtetin e regjistrimit sipas prefiksit GS1 të barkodit (EAN-13, EAN-8, UPC-A).
  * Kthen { kodi: "XK", emri: "Kosovë", prefiksi: "381" } ose null nëse nuk ka përputhje.
  */
+// Origjina nga prefiksi GS1 - vetëm për barkode me gjatësinë e GS1: 8, 12, 13 ose 14 shifra. Kodet e shkurtra të
+// brendshme (PLU-të e peshores si "1200" për bananet, "2700106") s'kanë shtet: më parë "1200" lexohej si prefiksi 120
+// dhe dilte SHBA. EAN-8 që nis me 0, 1 ose 2 është kod i kufizuar/i dyqanit. Shifra e kontrollit s'kërkohet: shumë
+// barkode në dyqane (p.sh. 8600114000002, 5449000000028) e kanë gabim, por prefiksi i shtetit është i saktë.
 export const origjinaNgaBarkodi = (barkodi) => {
   if (!barkodi) return null;
-  const shifrat = String(barkodi).replace(/\D/g, "");
-  if (shifrat.length < 3) return null;
+  const shifrat = String(barkodi).trim();
+  if (!/^\d+$/.test(shifrat) || ![8, 12, 13, 14].includes(shifrat.length)) return null;
+  if (shifrat.length === 8 && /^[012]/.test(shifrat)) return null;
 
-  // UPC-A (12 shifra) normalizohet me "0" përpara për t'u bërë EAN-13
-  const eNormalizuar = shifrat.length === 12 ? "0" + shifrat : shifrat;
+  // UPC-A (12) merr "0" përpara, GTIN-14 humbet shifrën treguese: të dy bëhen EAN-13. EAN-8 përdor 3 shifrat e para.
+  const eNormalizuar = shifrat.length === 12 ? "0" + shifrat : shifrat.length === 14 ? shifrat.slice(1) : shifrat;
   const prefiksiNumer = parseInt(eNormalizuar.slice(0, 3), 10);
-  if (isNaN(prefiksiNumer)) return null;
 
   const gjetur = GS1_PREFIKSET.find((p) => prefiksiNumer >= p.min && prefiksiNumer <= p.max);
   if (!gjetur) return null;

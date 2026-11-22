@@ -17,6 +17,7 @@ export const NDRYSHIMET = [
       ["E re", "Udhëzuesi i përdorimit brenda programit dhe në Word."],
       ["E re", "Përditësimi automatik nga GitHub: programi njofton kur ka version të ri, e shkarkon dhe e zëvendëson exe-në portabël (të dhënat mbeten)."],
       ["E re", "Çka ka të re: kjo dritare, pas çdo përditësimi."],
+      ["Rregullim", "Kodet e shkurtra të brendshme (p.sh. 1200 për bananet, PLU-të e peshores) s'marrin më shtet nga \"prefiksi\" (dilte SHBA): origjina nga barkodi vetëm për barkodet me 8, 12, 13 ose 14 shifra; për të tjerat vlen kolona Origjina ose zgjedhja te tabela."],
       ["Rregullim", "Emrat me hapësira të dyfishta (p.sh. \"Sallam EXTRA  350GR\") s'dalin më me shkronja shumë të vogla."],
       ["Rregullim", "Printimi direkt pa \"fit to page\" (shkalla 100%) dhe paralajmërim kur etiketat janë më afër se 4 mm nga skaji i letrës."],
     ],
