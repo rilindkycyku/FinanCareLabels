@@ -317,14 +317,22 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
       }
       return meIMire;
     };
-    const lartesia = (fs, n) => kapitale(fs) + (n - 1) * mm(fs) * lh;
+    // Shkronjat e mëdha me shenjë sipër (Ë, Ä, Ö, Ü, Š, Č, É...) dalin ~20% mbi lartësinë e kapitaleve: kur teksti i ka,
+    // rezervohet ai vend sipër, që pikat e Ë-së të mos prekin vijën / kokën sipër ose skajin e etiketës. (Ç-ja e ka
+    // shenjën poshtë - atë e mbulon hapësira e bishtave.)
+    const theksi = /[ÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝĀĂĄĆĈĊČĎĒĔĖĘĚĜĞĠĢĤĨĪĬĮİĴĶĹĻĽĿŃŅŇŌŎŐŔŖŘŚŜŞŠŢŤŨŪŬŮŰŲŴŶŸŹŻŽ]/.test(t) ? 0.2 : 0;
+    const lartesia = (fs, n) => kapitale(fs) + mm(fs) * theksi + (n - 1) * mm(fs) * lh;
+    // Teksti me shenjë sipër dhe pa bishta poshtë (g, j, p, q, y, Ç...), p.sh. "OFERTË SPECIALE", "28 NËNTORI": vendi i
+    // bishtave i jepet shenjës, që titulli të mos zvogëlohet. Teksti tjetër e mban vendin e bishtave si më parë (ai
+    // shërben edhe si hapësirë mes teksteve njëri mbi tjetrin, p.sh. titulli dhe data).
+    const kaBisht = !theksi || /[gjpqyçÇşŞșȘ,;()[\]{}|/]/.test(t);
     const fjalet = t.split(/\s+/).join(" ");
     const nxe = (fs) => {
       const rreshtat = ndaj(fs);
       return (
         rreshtat.length <= maxRreshta &&
         rreshtat.join(" ") === fjalet &&
-        lartesia(fs, rreshtat.length) + bishti(fs) * 0.6 <= maxH &&
+        lartesia(fs, rreshtat.length) + (kaBisht ? bishti(fs) * 0.6 : 0) <= maxH &&
         rreshtat.every((r) => gjeresia(r, fs, stili) <= maxW)
       );
     };
@@ -334,12 +342,12 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
       rreshtat = [...rreshtat.slice(0, maxRreshta - 1), rreshtat.slice(maxRreshta - 1).join(" ")];
     }
     rreshtat = rreshtat.map((r) => shkurto(r, maxW, fs, stili));
-    return { fs, rreshtat, lh, stili, lartesia: lartesia(fs, rreshtat.length) };
+    return { fs, rreshtat, lh, stili, theksi, lartesia: lartesia(fs, rreshtat.length) };
   };
 
   const shkruajBllokun = (blloku, x, yLart, lart, { rreshtimi = "left", ngjyra = NGJYRA.teksti } = {}) => {
-    const { fs, rreshtat, lh, stili, lartesia } = blloku;
-    const baza = yLart + (lart - lartesia) / 2 + kapitale(fs);
+    const { fs, rreshtat, lh, stili, lartesia, theksi = 0 } = blloku;
+    const baza = yLart + (lart - lartesia) / 2 + mm(fs) * theksi + kapitale(fs);
     doc.setFont(FONTI, stili);
     doc.setFontSize(fs);
     doc.setTextColor(...ngjyra);
