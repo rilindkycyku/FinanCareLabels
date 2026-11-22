@@ -7,6 +7,8 @@ export const NDRYSHIMET = [
     pikat: [
       ["E re", "Zgjedhja e printerit \"Bardh e zi / Me ngjyra\" (parazgjedhja: bardh e zi): flamujt me kontrast - shqiponja e zezë në të bardhë në vend të së kuqes që dilte gri e errët - dhe ngjyrat e etiketës në të zezë, gri ose të bardhë; vula e zbritjes del e zezë me tekst të bardhë; edhe vizatimet e festave. Flamujt e Kosovës dhe Shqipërisë te festat me kornizë si flamujt e origjinës. Parapamja tregon saktë si del."],
       ["Rregullim", "Zbritjet: nga dy çmimet e një produkti, më i larti del gjithmonë si çmimi origjinal (i prerë) dhe më i ulëti si çmimi me zbritje - edhe kur kolonat e Excel-it janë të ndërruara (p.sh. çmimi i rregullt te \"CmimiZbritje\") ose çmimet shkruhen anasjelltas te tabela. Më parë zbritja humbte dhe dilte çmimi i gabuar."],
+      ["E re", "\"Çmimi sa më i madh\": çmimi zë gjithë hapësirën bosh të etiketës (deri afër skajit dhe elementeve të tjera, pa i prekur) - 3% deri 22% më i madh sipas shabllonit, etiketat mbeten po aq të vogla në letër."],
+      ["Rregullim", "Vija e prerjes së çmimit të vjetër s'del më jashtë çmimit (s'e pret vijën sipër, p.sh. te \"Oferta javore\")."],
       ["Rregullim", "Shkronjat e mëdha me shenjë sipër (Ë, Ä, Ö, Š, Č...) s'e prekin më vijën, kokën sipër ose skajin e etiketës: vendi i pikave të Ë-së rezervohet; titujt si \"OFERTË SPECIALE\" mbeten po aq të mëdhenj."],
       ["Rregullim", "Shablloni \"Raft - 30 për fletë (58.5 × 28.5 mm)\": emri i shtetit s'e prek më çmimin (p.sh. \"j\" te Gjermani)."],
       ["E re", "FinanCare Labels edhe në shfletues dhe celular, me printimin e telefonit dhe \"Ndaj\" - lidhja te faqja e programit."],
