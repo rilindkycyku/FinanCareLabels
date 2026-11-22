@@ -5,7 +5,7 @@ export const NDRYSHIMET = [
     versioni: "1.0.3",
     data: "2026-11-22",
     pikat: [
-      ["E re", "\"Printer bardh e zi\" (i ndezur si parazgjedhje): flamujt me kontrast - shqiponja e zezë në të bardhë në vend të së kuqes që dilte gri e errët - dhe ngjyrat e etiketës në të zezë, gri ose të bardhë; vula e zbritjes del e zezë me tekst të bardhë. Parapamja tregon saktë si del."],
+      ["E re", "Zgjedhja e printerit \"Bardh e zi / Me ngjyra\" (parazgjedhja: bardh e zi): flamujt me kontrast - shqiponja e zezë në të bardhë në vend të së kuqes që dilte gri e errët - dhe ngjyrat e etiketës në të zezë, gri ose të bardhë; vula e zbritjes del e zezë me tekst të bardhë; edhe vizatimet e festave. Flamujt e Kosovës dhe Shqipërisë te festat me kornizë si flamujt e origjinës. Parapamja tregon saktë si del."],
       ["E re", "FinanCare Labels edhe në shfletues dhe celular, me printimin e telefonit dhe \"Ndaj\" - lidhja te faqja e programit."],
     ],
   },

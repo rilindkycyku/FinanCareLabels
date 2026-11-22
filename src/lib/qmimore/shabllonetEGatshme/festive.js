@@ -11,7 +11,18 @@ import { BARDHE, kuti, vije, vule, flamur, korniza } from "./ndihmes";
 const DOSJA = "/img/qmimore/festive/";
 const A4 = (rrjeta) => ({ letra: "a4", rrjeta });
 
-const imazh = (skedari, raporti, x, y, w, h, shtese = {}) => ({ lloji: "imazh", imazhi: DOSJA + skedari, raporti, x, y, w, h, ...shtese });
+// Flamujt (kombetare/) marrin kornizën e hollë si flamujt e origjinës - në bardh e zi pa të shqiponja do të "notonte".
+const imazh = (skedari, raporti, x, y, w, h, shtese = {}) => ({
+  lloji: "imazh",
+  imazhi: DOSJA + skedari,
+  raporti,
+  x,
+  y,
+  w,
+  h,
+  ...(skedari.startsWith("kombetare/") ? { kornize: true } : {}),
+  ...shtese,
+});
 
 // Vizatimi me vijë (fetare/xhamiaMeVije.png): vija e drejtë majtas, pastaj xhamia djathtas. Urimi shkruhet mbi pjesën e
 // drejtë të vijës, si i nënvizuar prej saj. Përpjesët e imazhit (1800 × 491): vija në 70.6% të lartësisë,
