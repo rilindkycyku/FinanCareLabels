@@ -10,7 +10,7 @@ const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const { pathToFileURL } = require('url')
-const { spawn } = require('child_process')
+const { spawn, execFileSync } = require('child_process')
 const crypto = require('crypto')
 const { app, BrowserWindow, Menu, dialog, ipcMain, net, protocol, shell } = require('electron')
 
@@ -222,6 +222,29 @@ const EXE_PORTABEL_SKEDARI = process.env.PORTABLE_EXECUTABLE_FILE || ''
 // I instaluari (Setup) përditësohet me Setup-in e ri, në heshtje (/S), dhe hapet vetë pas instalimit (--force-run).
 const I_INSTALUAR = app.isPackaged && !EXE_PORTABEL && process.platform === 'win32'
 let perditesimi = null // { versioni, url, madhesia, sha256, faqja, shenimet }
+
+// Çelësi i instaluesit në regjistër: UUID v5 i appId-së (com.rilindkycyku.financarelabels) që llogarit electron-builder.
+const CELESI_I_INSTALUESIT = 'Software\\ae1576f9-ce22-5cd5-b520-37b1dbee5e65'
+const dosjaNeRegjister = (rrenja) => {
+  try {
+    const dalja = execFileSync('reg.exe', ['query', `${rrenja}\\${CELESI_I_INSTALUESIT}`, '/v', 'InstallLocation'], { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] })
+    return /InstallLocation\s+REG_\w+\s+(.+)/i.exec(dalja)?.[1]?.trim() || ''
+  } catch {
+    return ''
+  }
+}
+const njejteDosje = (a, b) => Boolean(a && b) && path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase()
+// Përditësimi instalohet aty ku xhiron programi tani, me llojin e instalimit që i përket asaj dosjeje.
+function menyraEInstalimit() {
+  const dosja = path.dirname(app.getPath('exe'))
+  const perTeGjithe = dosjaNeRegjister('HKLM')
+  const perMua = dosjaNeRegjister('HKCU')
+  let menyra = '/currentuser'
+  if (njejteDosje(perTeGjithe, dosja)) menyra = '/allusers'
+  else if (njejteDosje(perMua, dosja)) menyra = '/currentuser'
+  else if (perTeGjithe && !perMua) menyra = '/allusers' // dosja e instalimit për të gjithë u zhvendos
+  return { menyra, dosja }
+}
 let skedariIShkarkuar = ''
 
 const versioniNumra = (v) => String(v || '').replace(/^v/i, '').split(/[.-]/).map((x) => parseInt(x, 10) || 0)
@@ -324,11 +347,19 @@ ipcMain.handle('perditesimi:shkarko', async (event) => {
 ipcMain.handle('perditesimi:instalo', () => {
   if (!skedariIShkarkuar || process.platform !== 'win32') return false
   if (I_INSTALUAR) {
-    // Instaluesi pret pak që programi të mbyllet, instalon në heshtje në të njëjtën dosje dhe e hap përsëri.
+    // Instaluesi pret pak që programi të mbyllet, instalon në heshtje në dosjen nga u hap programi dhe e hap përsëri.
+    // Pa /D instaluesi merr dosjen e regjistrit - kur dosja e programit është zhvendosur ose riemërtuar, instalonte
+    // atje dhe programi që hapet mbetej i vjetër (mesazhi i përditësimit dilte sërish).
+    const { menyra, dosja } = menyraEInstalimit()
     const thonjeza = (v) => `'${String(v).replace(/'/g, "''")}'`
+    const ditari = path.join(DATA_DIR, 'perditesimi.log')
     const skripti = [
       'Start-Sleep -Seconds 2',
-      `Start-Process -FilePath ${thonjeza(skedariIShkarkuar)} -ArgumentList '/S','--updated','--force-run' -Wait`,
+      // /D duhet të jetë i fundit dhe pa thonjëza (rregull i NSIS-it).
+      `$argumentet = '${menyra} /S --updated --force-run /D=${dosja.replace(/'/g, "''")}'`,
+      // Instalimi për të gjithë përdoruesit kërkon leje administratori: Windows-i e pyet përdoruesin (UAC).
+      `try { $p = Start-Process -FilePath ${thonjeza(skedariIShkarkuar)} -ArgumentList $argumentet${menyra === '/allusers' ? ' -Verb RunAs' : ''} -Wait -PassThru -ErrorAction Stop; $kodi = $p.ExitCode } catch { $kodi = "gabim: $($_.Exception.Message)" }`,
+      `Add-Content -LiteralPath ${thonjeza(ditari)} -Value "$(Get-Date -Format s) ${perditesimi?.versioni || ''} $argumentet -> $kodi" -Encoding UTF8`,
       `Remove-Item -LiteralPath ${thonjeza(skedariIShkarkuar)} -Force -ErrorAction SilentlyContinue`
     ].join('\n')
     spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', Buffer.from(skripti, 'utf16le').toString('base64')], {

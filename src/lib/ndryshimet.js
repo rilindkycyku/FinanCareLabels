@@ -2,6 +2,13 @@
 // Versioni i ri shtohet në krye. build.ps1 e rrit versionin e patch-it në çdo ndërtim.
 export const NDRYSHIMET = [
   {
+    versioni: "1.0.4",
+    data: "2026-11-22",
+    pikat: [
+      ["Rregullim", "Përditësimi automatik instalohet gjithmonë te dosja nga hapet programi, edhe kur dosja është zhvendosur ose riemërtuar pas instalimit. Më parë versioni i ri shkonte te dosja e vjetër dhe pas rihapjes dilte sërish mesazhi i përditësimit. Kur programi është instaluar për të gjithë përdoruesit, Windows-i kërkon leje administratori."],
+    ],
+  },
+  {
     versioni: "1.0.3",
     data: "2026-11-22",
     pikat: [
