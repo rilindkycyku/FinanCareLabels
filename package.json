@@ -79,5 +79,8 @@
       "deleteAppDataOnUninstall": false,
       "artifactName": "${productName} Setup ${version}.${ext}"
     }
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }

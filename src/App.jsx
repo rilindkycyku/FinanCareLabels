@@ -2,6 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
 import { Badge, Button, Form, Modal, ProgressBar, Spinner, Toast, ToastContainer } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowsRotate, faBookOpen, faCircleDown, faDesktop, faXmark, faFileImport, faFolderOpen, faGear, faGift, faMoon, faPenRuler, faPrint, faSun } from "@fortawesome/free-solid-svg-icons";
+import { Analytics } from "@vercel/analytics/react";
 import Printimi from "./Printimi";
 import ShiritiITitullit from "./components/ShiritiITitullit";
 // Editori dhe Udhëzuesi ngarkohen kur hapen: hapja e programit lexon vetëm Printimin.
@@ -439,6 +440,7 @@ export default function App() {
           </Toast>
         )}
       </ToastContainer>
+      <Analytics />
     </div>
   );
 }
