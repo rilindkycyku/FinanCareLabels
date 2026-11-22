@@ -22,6 +22,14 @@ festive si "Shtyp Çmimet" / "Shabllonet e Çmimores" te FinanCare.
 
 Excel-i ose CSV-ja hapet edhe duke e **tërhequr në dritare**; shablloni `.qmimore.json` importohet njësoj te Editori.
 
+### Versioni në shfletues (ueb / celular)
+
+E njëjta ndërfaqe punon edhe pa Electron (`window.labels` mungon): Excel-i zgjidhet ose lëshohet në faqe dhe mbahet në
+IndexedDB (`src/lib/shfletuesi.js`), shabllonet dhe cilësimet në localStorage, printimi bëhet me dritaren e printimit të
+shfletuesit (në celular PDF-ja hapet në skedë të re) dhe kalibrimi (vetëm zhvendosja) futet në vetë PDF-në. Faqja
+përshtatet për celular dhe instalohet si PWA (`public/manifest.webmanifest`, `public/sw.js` - punon pa internet pas
+hapjes së parë). Publikohet në Vercel nga `main` me `vercel.json` (pa shkarkuar Electron-in).
+
 ### Printeri dhe kalibrimi
 
 Te Cilësimet → Printeri: "Printo fletën e kalibrimit", matni A (skaji majtas → korniza, 10 mm), B (skaji lart → korniza,

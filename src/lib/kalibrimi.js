@@ -36,12 +36,17 @@ export const llogaritKalibrimin = (aktual, { majtas, lart, gjatesia }) => {
   return iRi;
 };
 
-// Fleta A4 e kalibrimit (PDF).
-export const fletaEKalibrimit = (printeri = "") => {
+// Fleta A4 e kalibrimit (PDF). zhvendosja { x, y } (mm): në shfletues korrigjimi futet në vetë PDF-në, ndaj edhe
+// fleta e kalibrimit vizatohet e zhvendosur (shenjat 1-6 mm te skajet jo - ato matin skajin e printerit).
+export const fletaEKalibrimit = (printeri = "", zhvendosja = null) => {
   const doc = new jsPDF("p", "mm", "a4");
   const W = 210;
   const H = 297;
   const L = LARGESIA;
+  const dx = Number(zhvendosja?.x) || 0;
+  const dy = Number(zhvendosja?.y) || 0;
+  const X = (v) => v + dx;
+  const Y = (v) => v + dy;
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, W, H, "F");
   doc.setDrawColor(0, 0, 0);
@@ -49,35 +54,35 @@ export const fletaEKalibrimit = (printeri = "") => {
 
   // Korniza 10 mm nga çdo skaj.
   doc.setLineWidth(0.3);
-  doc.rect(L, L, W - 2 * L, H - 2 * L, "S");
+  doc.rect(X(L), Y(L), W - 2 * L, H - 2 * L, "S");
 
   // Shigjetat e matjes te skaji i majtë dhe i sipërm.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("A", L + 2, H / 2 - 2);
-  doc.text("B", W / 2 + 2, L + 4);
+  doc.text("A", X(L + 2), Y(H / 2 - 2));
+  doc.text("B", X(W / 2 + 2), Y(L + 4));
   doc.setLineWidth(0.15);
   doc.setLineDashPattern([1, 1], 0);
-  doc.line(0, H / 2, L, H / 2);
-  doc.line(W / 2, 0, W / 2, L);
+  doc.line(0, Y(H / 2), X(L), Y(H / 2));
+  doc.line(X(W / 2), 0, X(W / 2), Y(L));
   doc.setLineDashPattern([], 0);
 
   // Vija e gjatë 150 mm me shenja çdo 10 mm.
   const x0 = (W - GJATESIA) / 2;
   const y0 = 120;
   doc.setLineWidth(0.4);
-  doc.line(x0, y0, x0 + GJATESIA, y0);
+  doc.line(X(x0), Y(y0), X(x0 + GJATESIA), Y(y0));
   doc.setLineWidth(0.2);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   for (let i = 0; i <= GJATESIA; i += 10) {
     const h = i % 50 === 0 ? 5 : 3;
-    doc.line(x0 + i, y0 - h, x0 + i, y0);
-    if (i % 50 === 0) doc.text(String(i), x0 + i, y0 - 6, { align: "center" });
+    doc.line(X(x0 + i), Y(y0 - h), X(x0 + i), Y(y0));
+    if (i % 50 === 0) doc.text(String(i), X(x0 + i), Y(y0 - 6), { align: "center" });
   }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("C", x0 + GJATESIA + 3, y0 + 1);
+  doc.text("C", X(x0 + GJATESIA + 3), Y(y0 + 1));
 
   // Zona që printeri s'e printon: shenja 1-6 mm nga skaji, në të katër këndet e anëve.
   doc.setFont("helvetica", "normal");

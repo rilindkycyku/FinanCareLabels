@@ -34,6 +34,8 @@ export default function App() {
   const editoriNdryshuar = useRef(false);
   // Shablloni .qmimore.json i lëshuar në dritare, për importin te Editori.
   const [shablloniILeshuar, setShablloniILeshuar] = useState(null);
+  // Shfletuesi: Excel-i i lëshuar në dritare (s'ka shteg skedari) shkon te Printimi si File.
+  const [excelILeshuar, setExcelILeshuar] = useState(null);
   const [mbiDritare, setMbiDritare] = useState(false);
   const [ndryshimet, setNdryshimet] = useState(null); // lista e versioneve për "Çka ka të re"
   // Përditësimi: { versioni, shenimet, madhesia, vetvetiu, gjendja: "gati" | "shkarkim" | "shkarkuar" | "gabim", progresi, gabimi }
@@ -146,6 +148,12 @@ export default function App() {
       setMbiDritare(false);
       const skedari = e.dataTransfer.files?.[0];
       if (!skedari) return;
+      if (EXCEL_RE.test(skedari.name) && !eshteDesktop) {
+        if (faqjaRef.current === "editori" && editoriNdryshuar.current) return mesazh("danger", "Ruani shabllonin në editor, pastaj lëshoni Excel-in.");
+        setFaqja("printimi");
+        setExcelILeshuar({ skedari, id: Date.now() });
+        return undefined;
+      }
       if (EXCEL_RE.test(skedari.name)) {
         const shtegu = eshteDesktop ? window.labels.shteguISkedarit(skedari) : "";
         if (!shtegu) return mesazh("danger", "Skedari s'u hap - provoni me \"Hap Excel-in\".");
@@ -209,7 +217,9 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="lb-offline">Pa internet · {cilesimet.emriBiznesit || "pa emër biznesi"}</div>
+        <div className="lb-offline">
+          {eshteDesktop ? "Pa internet" : "Në shfletues · të dhënat mbeten në këtë pajisje"} · {cilesimet.emriBiznesit || "pa emër biznesi"}
+        </div>
         <button
           type="button"
           className="lb-tema-btn"
@@ -274,7 +284,7 @@ export default function App() {
       )}
 
       <main className="lb-permbajtja">
-        {faqja === "printimi" && <Printimi cilesimet={cilesimet} ndryshoCilesimet={ndryshoCilesimet} mesazh={mesazh} hapEditorin={() => shko("editori")} />}
+        {faqja === "printimi" && <Printimi cilesimet={cilesimet} ndryshoCilesimet={ndryshoCilesimet} mesazh={mesazh} hapEditorin={() => shko("editori")} excelILeshuar={excelILeshuar} />}
         <Suspense fallback={<Spinner animation="border" size="sm" className="m-4" />}>
           {faqja === "editori" && (
             <Editori mesazh={mesazh} emriBiznesit={cilesimet.emriBiznesit} iNdryshuarRef={editoriNdryshuar} skedariPerImport={shablloniILeshuar} />
@@ -303,6 +313,8 @@ export default function App() {
               <span>
                 Versioni <Badge bg="success">{VERSIONI || "-"}</Badge>
               </span>
+              {!eshteDesktop && <span className="small text-white-50">Versioni në shfletues përditësohet vetë - gjithmonë i fundit.</span>}
+              {eshteDesktop && (
               <Form.Check
                 type="switch"
                 id="lb-perditesimet"
@@ -311,6 +323,7 @@ export default function App() {
                 checked={kontrolloAuto}
                 onChange={(e) => ndryshoCilesimet({ kontrolloPerditesimet: e.target.checked })}
               />
+              )}
               {eshteDesktop && (
                 <Button size="sm" variant="secondary" className="btn-cancel" disabled={kontrolli === "duke"} onClick={() => kontrollo(true)}>
                   {kontrolli === "duke" ? <Spinner size="sm" animation="border" className="me-2" /> : <FontAwesomeIcon icon={faArrowsRotate} className="me-2" />}
@@ -325,11 +338,21 @@ export default function App() {
             {kontrolli && kontrolli !== "duke" && <div className="small text-white-50 mt-2">{kontrolli}</div>}
             <div className="ql-titulli-seksionit mt-4">Të dhënat</div>
             <div className="text-white-50 small mb-2">
+              {!eshteDesktop ? (
+                <>
+                  Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë shfletues, në këtë pajisje
+                  (jo në internet). Për t'i marrë në një pajisje tjetër, shkarkoni shabllonet te Editori dhe importojini atje. Pastrimi i të
+                  dhënave të shfletuesit i fshin.
+                </>
+              ) : (
+                <>
               Shabllonet, cilësimet, produktet e shtuara dhe historiku i printimeve ruhen në këtë dosje
               {menyra === "instaluar"
                 ? " (programi i instaluar). Kur kaloni nga versioni portabël, merrni të dhënat e tij me butonin më poshtë."
                 : ", pranë exe-së portabël. Për ta marrë programin në një kompjuter tjetër, kopjoni exe-në bashkë me këtë dosje."}{" "}
               Nuk dërgohet asgjë në internet.
+                </>
+              )}
             </div>
             <div className="d-flex align-items-center gap-2">
               <code className="text-info">{dosja || "localStorage (shfletuesi)"}</code>
@@ -375,7 +398,7 @@ export default function App() {
         </div>
       )}
 
-      <Modal show={Boolean(ndryshimet)} onHide={() => setNdryshimet(null)} centered size="lg" className="sp-modal">
+      <Modal show={Boolean(ndryshimet)} onHide={() => setNdryshimet(null)} centered size="lg" fullscreen="sm-down" className="sp-modal">
         <Modal.Header closeButton>
           <Modal.Title>
             <FontAwesomeIcon icon={faGift} className="me-2 text-success" />

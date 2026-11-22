@@ -597,3 +597,82 @@ html.ka-shiritin .modal-backdrop {
 .lb-perditesimi .progress { width: 180px; height: 6px; }
 .lb-ndryshimet h6 { margin-top: 10px; font-weight: 700; }
 .lb-ndryshimet li { margin-bottom: 4px; }
+
+/* ---------- Celulari dhe tableti (versioni në shfletues) ----------
+   Aplikacioni desktop ka gjerësi minimale 1024 px, ndaj këto rregulla vlejnë vetëm në shfletues. */
+@media (max-width: 767px) {
+  .lb-koka {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+  .lb-marka { font-size: 1rem; }
+  .lb-marka-fjala { height: 17px; }
+  .lb-offline { display: none; }
+  .lb-tema-btn { margin-left: auto; }
+  .lb-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -4px;
+  }
+  .lb-nav::-webkit-scrollbar { display: none; }
+  .lb-nav button { white-space: nowrap; padding: 7px 10px; font-size: 0.85rem; }
+
+  .lb-permbajtja { padding: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+  /* Magjistari: hapat si shirit lart (vetëm numri dhe emri), butonat poshtë gjithmonë në pamje. */
+  .lb-wizard { border-radius: 14px; min-height: 0; }
+  .lb-wizard-rail { padding: 10px; gap: 0; }
+  .lb-rail-titulli, .lb-rail-foot { display: none !important; }
+  .lb-stepper { flex-wrap: nowrap; overflow-x: auto; gap: 4px; }
+  .lb-step { flex: 0 0 auto; padding: 6px 8px; }
+  .lb-step .txt span { display: none; }
+  .lb-step .txt b { font-size: 0.8rem; }
+  .lb-wizard-body { padding: 12px; }
+  .lb-wizard-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    padding: 10px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+  }
+  .lb-wizard-foot > .text-white-50 { order: 3; width: 100%; }
+  .lb-wizard .sp-table-container { max-height: 62vh !important; min-height: 200px !important; overflow-x: auto !important; }
+  .lb-wizard .sp-table { min-width: 760px; }
+
+  .lb-excel { flex-wrap: wrap; padding: 10px 12px; }
+  .lb-excel-emri { flex: 1 1 calc(100% - 40px); }
+  .lb-excel .btn { flex: 1 1 auto; }
+  .ql-titulli-seksionit { flex-wrap: wrap; }
+  .ql-chips { flex-wrap: wrap; }
+  .lb-celesat { gap: 10px 16px; }
+
+  /* Parapamja e etiketës dhe dritaret */
+  .ql-parapamja-kanvasi canvas { max-width: 100%; height: auto !important; }
+  .pdf-pamja { max-height: none; }
+  .pdf-pamja canvas { max-height: none; width: 100% !important; }
+  .sp-modal .modal-footer { flex-wrap: wrap; gap: 8px; }
+  .sp-modal .modal-footer .btn { flex: 1 1 auto; }
+  .lb-lidh-fushat .form-label { width: 130px !important; }
+
+  /* Udhëzuesi: menyja si shirit horizontal lart */
+  .lb-udhezuesi { grid-template-columns: 1fr; gap: 10px; }
+  .lb-udh-menyja { position: static; flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 4px; }
+  .lb-udh-menyja button { white-space: nowrap; }
+  .lb-udh-menyja .btn { margin-top: 0 !important; white-space: nowrap; }
+  .lb-udh-permbajtja { max-height: none; padding-right: 0; }
+
+  .lb-perditesimi { flex-wrap: wrap; padding: 8px 12px; }
+  .lb-kalibrimi .form-control { width: 100% !important; }
+  .lb-leshimi > div { margin: 16px; padding: 24px; font-size: 16px; }
+}
+
+/* Prekja: objektivat më të mëdha */
+@media (pointer: coarse) {
+  .lb-nav button, .ql-chip, .btn-sm { min-height: 36px; }
+  .form-check-input { width: 2.4em; height: 1.3em; }
+}

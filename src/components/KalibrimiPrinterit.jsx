@@ -5,6 +5,11 @@ import { faCalculator, faPrint, faRotateLeft } from "@fortawesome/free-solid-svg
 import { faqetPerPrintim, lexoPrinterin } from "./PdfPamja";
 import { GJATESIA, LARGESIA, KALIBRIMI_BOSH, fletaEKalibrimit, kaKalibrim, kalibrimiI, llogaritKalibrimin, pershkrimiKalibrimit } from "../lib/kalibrimi";
 import { eshteDesktop } from "../lib/ruajtja";
+import { PRINTERI_I_SHFLETUESIT, printoNeShfletues } from "../lib/shfletuesi";
+
+// Në shfletues s'dihet printeri: një korrigjim i vetëm (zhvendosja), i futur në PDF; shkallën e jep dritarja e
+// printimit e shfletuesit (100%).
+const SHFLETUESI = [{ emri: PRINTERI_I_SHFLETUESIT, shfaqja: "Printeri i shfletuesit (dritarja e printimit)", parazgjedhur: true }];
 
 const numer = (v) => {
   const n = parseFloat(String(v ?? "").replace(",", "."));
@@ -19,7 +24,11 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
   const [duke, setDuke] = useState(false);
 
   useEffect(() => {
-    if (!eshteDesktop) return;
+    if (!eshteDesktop) {
+      setPrinterat(SHFLETUESI);
+      setPrinteri(PRINTERI_I_SHFLETUESIT);
+      return;
+    }
     window.labels
       .printerat()
       .then((lista) => {
@@ -36,6 +45,15 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
 
   const printoFleten = async () => {
     setDuke(true);
+    if (!eshteDesktop) {
+      try {
+        const r = await printoNeShfletues(fletaEKalibrimit("Shfletuesi", { x: k.x, y: k.y }).output("blob"));
+        if (r === "bllokuar") mesazh("danger", "Shfletuesi e bllokoi skedën e re - lejoni dritaret (pop-up).");
+      } finally {
+        setDuke(false);
+      }
+      return;
+    }
     try {
       const blob = fletaEKalibrimit(printeri).output("blob");
       const { faqet, w, h } = await faqetPerPrintim(blob);
@@ -63,8 +81,6 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
     setMatjet({ majtas: "", lart: "", gjatesia: "" });
     mesazh("success", `Kalibrimi u ruajt: ${pershkrimiKalibrimit(iRi)}. Printojeni fletën sërish për ta verifikuar.`);
   };
-
-  if (!eshteDesktop) return <div className="text-white-50 small">Kalibrimi i printerit punon vetëm në aplikacionin desktop.</div>;
 
   return (
     <div className="lb-kalibrimi">
@@ -104,11 +120,16 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
               <div className="lb-kalibrimi-nr">2</div>
               <div>
                 <b>Shënoni matjet (mm)</b>
+                {!eshteDesktop && (
+                  <div className="small text-white-50">
+                    Në shfletues: nëse C s'del 150 mm, te dritarja e printimit zgjidhni shkallën 100% / Madhësia reale (jo "Fit").
+                  </div>
+                )}
                 <div className="d-flex gap-2 flex-wrap mt-1 align-items-end">
                   {[
                     ["majtas", "A - skaji majtas", LARGESIA],
                     ["lart", "B - skaji lart", LARGESIA],
-                    ["gjatesia", "C - vija e gjatë", GJATESIA],
+                    ...(eshteDesktop ? [["gjatesia", "C - vija e gjatë", GJATESIA]] : []),
                   ].map(([celesi, emri, duhet]) => (
                     <Form.Group key={celesi}>
                       <Form.Label className="small mb-1">{emri}</Form.Label>
@@ -137,7 +158,7 @@ export default function KalibrimiPrinterit({ kalibrimet, ndrysho, mesazh }) {
               {[
                 ["x", "Horizontalisht (mm, + = djathtas)"],
                 ["y", "Vertikalisht (mm, + = poshtë)"],
-                ["shkalla", "Shkalla (%)"],
+                ...(eshteDesktop ? [["shkalla", "Shkalla (%)"]] : []),
               ].map(([celesi, emri]) => (
                 <Form.Group key={celesi}>
                   <Form.Label className="small mb-1">{emri}</Form.Label>

@@ -192,6 +192,9 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
     zmadhoNeVendinELire = true,
     // Vijat e prerjes: null = sipas shabllonit, true/false = gjithmonë / kurrë.
     vijatEPrerjes = null,
+    // Korrigjimi i printerit në shfletues (mm): rrjeta zhvendoset djathtas/poshtë; në desktop e bën printimi direkt.
+    zhvendosjaX = 0,
+    zhvendosjaY = 0,
     orientimi = "auto",
     margjina = SIGURIA_SKAJIT,
   } = opsionet;
@@ -559,8 +562,8 @@ export const vizatoQmimoren = (products, opsionet = {}) => {
   // Orientimi dhe rrjeta zgjidhen nga planiFletes (sa më shumë etiketa me margjinën minimale të zgjedhur); rrjeta
   // vihet në mes të fletës, që etiketat të jenë sa më larg skajit. Mes etiketave ka hapësirë (mm) për prerje.
   const { kolonat, perFaqe, gH, gV } = plani;
-  const xFillimi = plani.anash;
-  const yFillimi = plani.lartPoshte;
+  const xFillimi = plani.anash + (Number(zhvendosjaX) || 0);
+  const yFillimi = plani.lartPoshte + (Number(zhvendosjaY) || 0);
   const meVija = vijatEPrerjes == null ? shablloni.vijaPrerjes : Boolean(vijatEPrerjes);
   products.forEach((product, i) => {
     if (i > 0 && i % perFaqe === 0) {
