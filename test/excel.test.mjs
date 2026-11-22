@@ -62,3 +62,25 @@ test("kalibrimi nga matjet", () => {
   const k = llogaritKalibrimin({ x: 0, y: 0, shkalla: 100 }, { majtas: 12.5, lart: 9, gjatesia: 147 });
   assert.deepEqual(k, { x: -2.5, y: 1, shkalla: 102 });
 });
+
+test("zbritja: më i larti është gjithmonë origjinali, më i ulëti me zbritje - pavarësisht kolonave dhe radhës", () => {
+  const raste = [
+    [["Emertimi", "CmimiZbritje", "CmimiRregullt"], ["A", 1.99, 2.35]],
+    [["Emertimi", "CmimiZbritje", "CmimiRregullt"], ["A", 2.35, 1.99]], // të ndërruara (radha e shabllonit tonë)
+    [["Emertimi", "Cmimi", "Cmimi i rregullt"], ["A", 1.99, 2.35]],
+    [["Emertimi", "Cmimi", "Cmimi me zbritje"], ["A", 2.35, 1.99]],
+    [["Emertimi", "Cmimi", "Cmimi me zbritje"], ["A", 1.99, 2.35]],
+    [["Emertimi", "CmimRi", "CmimiVjeter"], ["A", 1.99, 2.35]],
+  ];
+  for (const r of raste) {
+    const p = lexoExcelin(excel(r)).fletet[0].produktet[0];
+    assert.deepEqual([p.price, p.qmimiPasZbritjes, p.discount], [2.35, 1.99, 15.3], JSON.stringify(r[0]) + JSON.stringify(r[1]));
+  }
+});
+
+test("dy çmime të barabarta: pa zbritje; çmimi i blerjes s'bëhet zbritje", () => {
+  let p = lexoExcelin(excel([["Emertimi", "CmimiZbritje", "CmimiRregullt"], ["A", 1.99, 1.99]])).fletet[0].produktet[0];
+  assert.deepEqual([p.price, p.qmimiPasZbritjes], [1.99, null]);
+  p = lexoExcelin(excel([["Emertimi", "Cmimi blerjes", "Cmimi shitjes"], ["A", 1.2, 1.99]])).fletet[0].produktet[0];
+  assert.deepEqual([p.price, p.qmimiPasZbritjes], [1.99, null]);
+});

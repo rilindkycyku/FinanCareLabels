@@ -152,6 +152,24 @@ const titujtNgaPermbajtja = (rreshtat) => {
 
 const rrumbullako2 = (v) => Math.round(v * 100) / 100;
 
+// Çmimet e rreshtit → { price, qmimiPasZbritjes, discount }. Kur rreshti ka dy çmime të ndryshme (çmimi me zbritje,
+// i rregullti/i vjetri, ose "Cmimi"), MË I LARTI është gjithmonë çmimi origjinal (i prerë) dhe MË I ULËTI ai me
+// zbritje - pavarësisht emrave dhe radhës së kolonave. Më parë, kolonat e ndërruara (p.sh. çmimi i rregullt te
+// "CmimiZbritje", që në shabllonin tonë vjen e para) e humbnin zbritjen dhe nxirrnin çmimin e gabuar.
+export const qmimetMeZbritje = (qmimi, zbritje, rregullt) => {
+  const vlera = (v) => (v > 0 ? v : null);
+  const [q, z, r] = [vlera(qmimi), vlera(zbritje), vlera(rregullt)];
+  // Çifti: zbritja me të rregulltin; ndryshe zbritja me "Cmimi"; ndryshe "Cmimi" me të rregulltin.
+  const cifti = z != null && r != null ? [z, r] : z != null && q != null ? [z, q] : q != null && r != null ? [q, r] : null;
+  if (cifti && rrumbullako2(cifti[0]) !== rrumbullako2(cifti[1])) {
+    const origjinali = rrumbullako2(Math.max(...cifti));
+    const meZbritje = rrumbullako2(Math.min(...cifti));
+    return { price: origjinali, qmimiPasZbritjes: meZbritje, discount: Math.round((1 - meZbritje / origjinali) * 1000) / 10 };
+  }
+  const nje = [z, q, r].find((v) => v != null);
+  return { price: nje == null ? null : rrumbullako2(nje), qmimiPasZbritjes: null, discount: null };
+};
+
 const kodiNgaEmri = (() => {
   const harta = new Map(Object.entries(EMRAT_E_SHTETEVE).map(([kodi, emri]) => [normalizo(emri), kodi]));
   // Emrat e Excel-it janë në trajtën e shquar ("Kosova", "Gjermania") - provohet edhe pa mbaresën.
@@ -188,20 +206,7 @@ const produktiNgaRreshti = (r, kolonat, nrRreshtit) => {
     qmimiPasZbritjes: null,
   };
 
-  // Me zbritje: çmimi i rregullt (i vjetri, i prerë) + çmimi i ri; përqindja llogaritet nga të dy.
-  if (zbritje > 0 && rregullt > zbritje) {
-    p.price = rrumbullako2(rregullt);
-    p.qmimiPasZbritjes = rrumbullako2(zbritje);
-    p.discount = Math.round((1 - zbritje / rregullt) * 1000) / 10;
-  } else if (zbritje > 0 && qmimi > zbritje && kolonat.qmimiRregullt === undefined) {
-    // Kolonat "Cmimi" + "Cmimi me zbritje" (pa "i rregullt"): çmimi është i rregullti.
-    p.price = rrumbullako2(qmimi);
-    p.qmimiPasZbritjes = rrumbullako2(zbritje);
-    p.discount = Math.round((1 - zbritje / qmimi) * 1000) / 10;
-  } else {
-    p.price = [zbritje, qmimi, rregullt].find((v) => v > 0) ?? null;
-    if (p.price != null) p.price = rrumbullako2(p.price);
-  }
+  Object.assign(p, qmimetMeZbritje(qmimi, zbritje, rregullt));
 
   // Origjina: nga prefiksi GS1 i barkodit; kur barkodi është i brendshëm, nga kolona "Origjina".
   p.origin = origjinaNgaBarkodi(p.barcode)?.kodi || kodiNgaEmri(merr("origjina"));
@@ -329,14 +334,8 @@ export const meNdryshime = (baza, n) => {
     qmimiPasZbritjes: null,
     ndryshuar: true,
   };
-  if (qmimiRi > 0 && qmimi > qmimiRi) {
-    p.price = rrumbullako2(qmimi);
-    p.qmimiPasZbritjes = rrumbullako2(qmimiRi);
-    p.discount = Math.round((1 - qmimiRi / qmimi) * 1000) / 10;
-  } else {
-    const v = qmimi > 0 ? qmimi : qmimiRi > 0 ? qmimiRi : null;
-    p.price = v == null ? null : rrumbullako2(v);
-  }
+  // Si te leximi i Excel-it: nga dy çmimet, më i larti është origjinali dhe më i ulëti ai me zbritje.
+  Object.assign(p, qmimetMeZbritje(qmimi, qmimiRi, null));
   // Origjina: e zgjedhur me dorë, ndryshe automatike nga prefiksi GS1 (si te leximi i Excel-it).
   p.origjinaMeDore = Boolean(n.origjina);
   p.origin = n.origjina || origjinaNgaBarkodi(barcode)?.kodi || (barcode === baza.barcode ? baza.origin || "" : "");
