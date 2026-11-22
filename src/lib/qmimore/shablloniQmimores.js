@@ -401,16 +401,17 @@ const vizatoElementin = (m, el, p, g, x, y) => {
           doc.setGState(new doc.GState({ "stroke-opacity": 0.8 }));
         }
         doc.setDrawColor(230, 36, 41);
-        doc.setLineWidth(Math.max(0.35, r.lartesia * 0.14));
+        const trashesia = Math.max(0.35, r.lartesia * 0.14);
+        doc.setLineWidth(trashesia);
         doc.setLineCap("round");
-        // Pak përtej shifrave, jo shumë: mbi majë del vetëm 12% (më parë 30%, që te çmimet afër skajit
-        // dilte jashtë etiketës).
-        doc.line(
-          r.x0 - r.gjeresia * 0.02,
-          r.baza + r.lartesia * 0.12,
-          r.x0 + r.gjeresia * 1.03,
-          r.baza - r.lartesia * 1.12
-        );
+        // Vija brenda kutisë së çmimit (me skajet e rrumbullakëta): më parë dilte 12% mbi shifrat dhe te çmimet nën
+        // një vijë (p.sh. "Oferta javore") e priste atë vijë. Nga pak poshtë bazës majtas deri te maja djathtas.
+        const brenda = trashesia / 2 + 0.1;
+        const yLart = Math.max(y + brenda, r.baza - r.lartesia * 1.04);
+        const yPoshte = Math.min(y + h - brenda, r.baza + r.lartesia * 0.1);
+        const xMajtas = Math.max(x + brenda, r.x0 - r.gjeresia * 0.02);
+        const xDjathtas = Math.min(x + w - brenda, r.x0 + r.gjeresia * 1.02);
+        doc.line(xMajtas, yPoshte, xDjathtas, yLart);
         doc.setLineCap("butt");
         if (kaOpacitet) doc.restoreGraphicsState();
       }
@@ -652,11 +653,62 @@ const mbulimi = (a0, a1, b0, b1) => Math.max(0, Math.min(a1, b1) - Math.max(a0, 
 // Kutitë e reja (sipas id) për çmimin dhe emrin: zgjerohen drejt elementeve të fikura ngjitur (majtas/djathtas kur
 // ndajnë rreshtin, lart/poshtë kur ndajnë kolonën), pa prekur asnjë element tjetër që del - as kornizat (kutitë
 // që e përmbajnë elementin e kufizojnë). Çmimi ka përparësi para emrit.
+// Hapësira e lirë rreth çmimit: çmimi zgjerohet hap pas hapi (0.25 mm) në çdo drejtim, deri ≥0.8 mm nga skaji i etiketës
+// dhe ≥0.6 mm nga çdo element tjetër që del (barkodi, emri, vijat, vula, çmimi i vjetër...). Kështu etiketa mbetet e
+// vogël në letër, por numri zë gjithë vendin që ka.
+// Te posterat hapësirat rriten me etiketën (~2% e anës më të vogël), që çmimi i madh të mos ngjitet me çmimin e vjetër.
+const HAPI = 0.25;
+const zgjeroNeHapesireTeLire = (o, pengesat, kornizat, sh) => {
+  const SKAJI = Math.max(0.8, Math.min(sh.w, sh.h) * 0.015);
+  const LARGESIA_NGA_ELEMENTET = Math.max(0.6, Math.min(sh.w, sh.h) * 0.02);
+  const fryre = pengesat.map((p) => ({ x: p.x - LARGESIA_NGA_ELEMENTET, y: p.y - LARGESIA_NGA_ELEMENTET, w: p.w + 2 * LARGESIA_NGA_ELEMENTET, h: p.h + 2 * LARGESIA_NGA_ELEMENTET }));
+  // Kufijtë: etiketa (pa skajin) dhe kornizat që e përmbajnë çmimin - por kurrë më ngushtë se kutia origjinale.
+  let x0 = SKAJI, y0 = SKAJI, x1 = sh.w - SKAJI, y1 = sh.h - SKAJI;
+  for (const kk of kornizat) {
+    x0 = Math.max(x0, kk.x + SKAJI);
+    y0 = Math.max(y0, kk.y + SKAJI);
+    x1 = Math.min(x1, kk.x + kk.w - SKAJI);
+    y1 = Math.min(y1, kk.y + kk.h - SKAJI);
+  }
+  x0 = Math.min(x0, o.x); y0 = Math.min(y0, o.y); x1 = Math.max(x1, o.x + o.w); y1 = Math.max(y1, o.y + o.h);
+  // Vetëm rripi i ri kontrollohet: kutia origjinale mund të jetë vetë ngjitur me një element.
+  const iLire = (rripi) => !fryre.some((p) => priten(rripi, p));
+  let k = { ...o };
+  for (let n = 0, u = true; u && n < 2000; n++) {
+    u = false;
+    if (k.y - HAPI >= y0 - 1e-6 && iLire({ x: k.x, y: k.y - HAPI, w: k.w, h: HAPI })) {
+      k = { ...k, y: k.y - HAPI, h: k.h + HAPI };
+      u = true;
+    }
+    if (k.y + k.h + HAPI <= y1 + 1e-6 && iLire({ x: k.x, y: k.y + k.h, w: k.w, h: HAPI })) {
+      k = { ...k, h: k.h + HAPI };
+      u = true;
+    }
+    if (k.x - HAPI >= x0 - 1e-6 && iLire({ x: k.x - HAPI, y: k.y, w: HAPI, h: k.h })) {
+      k = { ...k, x: k.x - HAPI, w: k.w + HAPI };
+      u = true;
+    }
+    if (k.x + k.w + HAPI <= x1 + 1e-6 && iLire({ x: k.x + k.w, y: k.y, w: HAPI, h: k.h })) {
+      k = { ...k, w: k.w + HAPI };
+      u = true;
+    }
+  }
+  return k;
+};
+const eshteQmimiKryesor = (el) => el.lloji === "qmimi" && (el.burimi === "aktual" || el.burimi === "rregullt" || !el.burimi);
+
+// Kutitë e reja (sipas elementit): { x, y, w, h, qender } - qender kur çmimi u zgjerua anash në vendin e një elementi të
+// fikur (del në mes të vendit të ri). Llogariten një herë për çdo kombinim elementesh të dukshme (memoria), jo për çdo
+// etiketë.
+const memoriaEKutive = new WeakMap();
 const kutiteMeVendinELire = (m, sh, g) => {
   if (m.zmadhoNeVendinELire === false) return null;
   const teDukshmit = sh.elementet.filter((el) => plotesonKushtin(el.kushti, g));
   const teFikurat = teDukshmit.filter((el) => uFikMeOpsion(m, el));
-  if (!teFikurat.length) return null;
+  const celesi = `${teDukshmit.map((el) => sh.elementet.indexOf(el)).join(",")}|${teFikurat.map((el) => sh.elementet.indexOf(el)).join(",")}`;
+  let memoria = memoriaEKutive.get(sh);
+  if (!memoria) memoriaEKutive.set(sh, (memoria = new Map()));
+  if (memoria.has(celesi)) return memoria.get(celesi);
   const kutite = new Map(teDukshmit.filter((el) => !teFikurat.includes(el)).map((el) => [el, { x: el.x, y: el.y, w: el.w, h: el.h }]));
   const teRriturit = [...kutite.keys()].filter(rritet).sort((a, b) => (b.lloji === "qmimi") - (a.lloji === "qmimi"));
   const ndryshimet = new Map();
@@ -667,7 +719,7 @@ const kutiteMeVendinELire = (m, sh, g) => {
     const lire = (k) =>
       k.x >= -E && k.y >= -E && k.x + k.w <= sh.w + E && k.y + k.h <= sh.h + E && !pengesat.some((p) => priten(k, p)) && kornizat.every((kk) => permban(kk, k));
     let k = { ...o };
-    // Horizontalisht: të fikurat në të njëjtin rresht (mbivendosje vertikale ≥ 30%).
+    // 1) Vendi i elementeve të fikura - horizontalisht: të fikurat në të njëjtin rresht (mbivendosje vertikale ≥ 30%).
     const rreshti = teFikurat.filter((f) => mbulimi(f.y, f.y + f.h, o.y, o.y + o.h) >= 0.3 * Math.min(f.h, o.h));
     const majtas = Math.min(...rreshti.filter((f) => f.x + f.w <= o.x + E).map((f) => f.x), k.x);
     if (majtas < k.x && lire({ ...k, x: majtas, w: k.x + k.w - majtas })) k = { ...k, x: majtas, w: k.x + k.w - majtas };
@@ -679,12 +731,17 @@ const kutiteMeVendinELire = (m, sh, g) => {
     if (lart < k.y && lire({ ...k, y: lart, h: k.y + k.h - lart })) k = { ...k, y: lart, h: k.y + k.h - lart };
     const poshte = Math.max(...kolona.filter((f) => f.y + f.h > k.y + k.h).map((f) => f.y + f.h), k.y + k.h);
     if (poshte > k.y + k.h && lire({ ...k, h: poshte - k.y })) k = { ...k, h: poshte - k.y };
+    const qender = k.w > o.w + 1;
+    // 2) Çmimi kryesor zë edhe hapësirën bosh rreth tij.
+    if (eshteQmimiKryesor(el)) k = zgjeroNeHapesireTeLire(k, pengesat, kornizat, sh);
     if (k.x !== o.x || k.y !== o.y || k.w !== o.w || k.h !== o.h) {
       kutite.set(el, k);
-      ndryshimet.set(el, k);
+      ndryshimet.set(el, { ...k, qender });
     }
   }
-  return ndryshimet.size ? ndryshimet : null;
+  const rezultati = ndryshimet.size ? ndryshimet : null;
+  memoria.set(celesi, rezultati);
+  return rezultati;
 };
 
 // Vizaton një etiketë sipas shabllonit, me këndin lart-majtas te (x, y). Elementet vizatohen sipas
@@ -706,7 +763,7 @@ export const vizatoShabllonin = (m, sh, p, x, y) => {
           ...el,
           ...k,
           madhesia: el.madhesia > 0 ? el.madhesia * Math.max(k.w / el.w, k.h / el.h) : el.madhesia,
-          ...(el.lloji === "qmimi" && k.w > el.w + 1 ? { rreshtimi: "center" } : {}),
+          ...(el.lloji === "qmimi" && k.qender ? { rreshtimi: "center" } : {}),
         }
       : el;
     vizatoElementin(m, e, p, g, x + e.x, y + e.y);

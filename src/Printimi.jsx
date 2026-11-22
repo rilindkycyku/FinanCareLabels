@@ -1117,7 +1117,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     ["shfaqEuro", "Simboli €", "Pa €, çmimi del më i madh"],
                     ["shfaqFlamurin", "Flamuri", "Flamuri i shtetit të origjinës"],
                     ["shfaqShtetin", "Shteti", "Emri i shtetit të origjinës (p.sh. Holandë)"],
-                    ["zmadhoNeVendinELire", "Zmadho çmimin në vendin e lirë", "Kur fikni barkodin, flamurin ose shtetin, çmimi dhe emri zënë vendin e tyre"],
+                    ["zmadhoNeVendinELire", "Çmimi sa më i madh", "Çmimi zë gjithë hapësirën bosh të etiketës (deri te skaji dhe elementet e tjera), edhe vendin e barkodit / flamurit / shtetit kur i fikni"],
                   ].map(([celesi, emri, shpjegimi]) => (
                     <Form.Check
                       key={celesi}
