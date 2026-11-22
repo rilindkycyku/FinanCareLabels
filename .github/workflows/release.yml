@@ -6,9 +6,16 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  release:
+    types: [published]
 
 permissions:
   contents: write
+
+# Release-i nga GitHub krijon tag-un dhe publikohet njëherësh (dy ngjarje): ndërtohet vetëm një herë për çdo tag.
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   windows:
@@ -24,7 +31,7 @@ jobs:
       - name: Versioni nga tag-u
         shell: pwsh
         run: |
-          $v = "${{ github.ref_name }}".TrimStart("v")
+          $v = "${{ github.event.release.tag_name || github.ref_name }}".TrimStart("v")
           npm version $v --no-git-tag-version --allow-same-version
           "VERSIONI=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
@@ -53,7 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.ref_name }}"
+          $tag = "${{ github.event.release.tag_name || github.ref_name }}"
           node scripts/shenimet-e-versionit.mjs $env:VERSIONI | Out-File -FilePath shenimet.md -Encoding utf8
           $exe = @("release/FinanCare Labels Setup $env:VERSIONI.exe", "release/FinanCare Labels Portable $env:VERSIONI.exe")
           # Release-i i krijuar me dorë në GitHub (Releases -> Draft a new release) krijon edhe tag-un: këtu vetëm i
