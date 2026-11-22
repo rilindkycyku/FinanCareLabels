@@ -13,7 +13,7 @@ import { dataShqip, gjurmetEPunes, indeksoHistorikun, lexoHistorikun, regjistroP
 import { normalizoShabllonin, pergatitImazhet, pershkrimiLetres, rrjetaEShabllonit, shablloniKaZbritje, shablloniTermik } from "./lib/qmimore/shablloniQmimores";
 import { KATEGORITE_E_SHABLLONEVE, SHABLLONET_E_GATSHME, nenkategoriteE } from "./lib/qmimore/shabllonetEGatshme";
 import { emriShtetit, flamuriSiDataUrl, flamuriSiPng, ngarkoFlamujt } from "./lib/qmimore/origjina";
-import { flamuriPngBardhEZi } from "./lib/qmimore/bardhEZi";
+import { flamuriPngBardhEZi, shablloniBardhEZi } from "./lib/qmimore/bardhEZi";
 import { fletaEParazgjedhur, ngarkoFontetEQmimores, planiFletes, vizatoQmimoren } from "./lib/qmimore/qmimorjaPdf";
 
 const TE_MIAT = "temiat";
@@ -493,12 +493,13 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     setShablloniGati(null);
     if (!shablloniAktiv) return undefined;
     pergatitImazhet(shablloniAktiv)
+      .then((sh) => (cilesimet.bardhEZi !== false ? shablloniBardhEZi(sh) : sh))
       .then((sh) => aktiv && setShablloniGati(sh))
       .catch(() => aktiv && setShablloniGati(shablloniAktiv));
     return () => {
       aktiv = false;
     };
-  }, [shablloniAktiv]);
+  }, [shablloniAktiv, cilesimet.bardhEZi]);
 
   const meDate = shablloniAktiv ? perdorFushen(shablloniAktiv, "data") : false;
   const meZbritje = shablloniAktiv ? shablloniKaZbritje(shablloniAktiv) : false;
@@ -630,7 +631,8 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
     try {
       const g = await gjurmetEPunes(shablloniAktiv, opsionetEGjurmes, produktet);
       const krijo = async () => {
-        const doc = vizatoQmimoren(produktetPerPrintim, { ...opsionet, shablloni: await pergatitImazhet(shablloniAktiv) });
+        const sh = await pergatitImazhet(shablloniAktiv);
+        const doc = vizatoQmimoren(produktetPerPrintim, { ...opsionet, shablloni: opsionet.bardhEZi ? await shablloniBardhEZi(sh) : sh });
         uRegjistrua.current = false;
         setPdf({
           blob: doc.output("blob"),
