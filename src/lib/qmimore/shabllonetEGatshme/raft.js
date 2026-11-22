@@ -102,8 +102,10 @@ export default [
     pershkrimi: "Emri majtas, origjina lart, çmimi i madh",
     shablloni: shabllon(58.5, 28.5, { letra: "a4", rrjeta: "3x10-585" }, [
       emri(2, 3, 23, 22, { rreshta: 3, rreshtimi: "left", madhesia: 20 }),
-      tekst("{shteti}", 27, 0.8, 30.5, 5, { rreshtimi: "center", madhesia: 14 }),
-      qmimi("aktual", 26, 6, 31.5, 15.5, { rreshtimi: "center" }),
+      // Shteti mbi çmimin me ~1 mm hapësirë: shkronjat me bisht poshtë ("j" te Gjermani, "q" te Maqedonia) s'e prekin
+      // më çmimin (më parë hapësira ishte 0.2 mm).
+      tekst("{shteti}", 27, 0.5, 30.5, 4.6, { rreshtimi: "center", madhesia: 14 }),
+      qmimi("aktual", 26, 6.6, 31.5, 15, { rreshtimi: "center" }),
       tekst("{barkodi}", 27, 22, 30.5, 5.5, { rreshtimi: "center", madhesia: 13 }),
     ]),
   },
