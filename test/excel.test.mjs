@@ -91,3 +91,15 @@ test("njësia nga emri: 'kg' pas numrit është paketimi (copë), 'kg' i vetëm 
   ).fletet[0];
   assert.deepEqual(produktet.map((p) => p.unit), ["", "", "kg"]);
 });
+
+test("disa Excel-a njëherësh: fletët e secilit me emrin e skedarit para, emri origjinal mbahet", async () => {
+  const { bashkoExcelat } = await import("../src/lib/excel.js");
+  const a = lexoExcelin(excel([["Emertimi", "Cmimi"], ["Jafa", 1.44]], "Sheet1"));
+  const b = lexoExcelin(excel([["Emertimi", "Cmimi"], ["Buldak", 2.94]], "Sheet1"));
+  const nje = bashkoExcelat([{ emri: "C:\\Cmimet\\Book1.xlsx", rezultati: a }]);
+  assert.deepEqual(nje.fletet.map((f) => f.emri), ["Sheet1"]);
+  const dy = bashkoExcelat([{ emri: "C:\\Cmimet\\Book1.xlsx", rezultati: a }, { emri: "Book2.xlsx", rezultati: b }, { emri: "Book2.xlsx", rezultati: b }]);
+  assert.deepEqual(dy.fletet.map((f) => f.emri), ["Book1 · Sheet1", "Book2 · Sheet1", "Book2 (2) · Sheet1"]);
+  assert.deepEqual(dy.fletet.map((f) => [f.emriNeExcel, f.skedari]), [["Sheet1", 0], ["Sheet1", 1], ["Sheet1", 2]]);
+  assert.equal(dy.fletet[1].produktet[0].name, "Buldak");
+});

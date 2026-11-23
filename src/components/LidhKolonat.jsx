@@ -55,7 +55,7 @@ export default function LidhKolonat({ fleta, kaHarteTeRuajtur, onRuaj, onHiq, on
   const gati = kolonat.emri !== undefined && kaQmim;
   const nrRreshtit = (i) => (fleta?.rreshtiIPare || 0) + i + 1;
 
-  const ruaj = () => onRuaj(celesiIHartes(fleta.emri, { rreshti }, mostra), { fillimi, kolonat });
+  const ruaj = () => onRuaj(celesiIHartes(fleta.emriNeExcel ?? fleta.emri, { rreshti }, mostra), { fillimi, kolonat });
 
   return (
     <Modal show={Boolean(fleta)} onHide={onHide} size="xl" centered fullscreen="md-down" className="sp-modal">

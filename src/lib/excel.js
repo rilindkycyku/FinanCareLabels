@@ -346,3 +346,22 @@ export const meNdryshime = (baza, n) => {
   p.gabim = !name.trim() ? "Pa emër" : p.price == null ? "Pa çmim" : "";
   return p;
 };
+
+/**
+ * Disa Excel-a njëherësh: fletët e të gjithëve në një listë. Me një skedar emrat e fletëve mbeten si në Excel; me
+ * disa, çdo fletë merr para emrin e skedarit ("Book1 · Sheet1"). emriNeExcel mban emrin origjinal (për lidhjet e
+ * kolonave dhe sugjerimin e shabllonit) dhe skedari indeksin e skedarit në listë.
+ * @param lista [{ emri: emri i skedarit, rezultati: lexoExcelin(...) }]
+ */
+export const bashkoExcelat = (lista) => {
+  const teZena = new Set();
+  const fletet = [];
+  lista.forEach(({ emri, rezultati }, skedari) => {
+    const origjinali = String(emri || "").split(/[\\/]/).pop().replace(/\.(xlsx|xlsm|xls|ods|csv)$/i, "") || `Excel ${skedari + 1}`;
+    let baza = origjinali;
+    for (let i = 2; teZena.has(baza); i++) baza = `${origjinali} (${i})`;
+    teZena.add(baza);
+    for (const f of rezultati.fletet) fletet.push({ ...f, emri: lista.length > 1 ? `${baza} · ${f.emri}` : f.emri, emriNeExcel: f.emri, skedari });
+  });
+  return { fletet: [...fletet.filter((f) => f.titujt), ...fletet.filter((f) => !f.titujt)] };
+};

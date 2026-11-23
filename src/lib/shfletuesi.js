@@ -28,9 +28,12 @@ const veprim = async (menyra, fn) => {
   }
 };
 
-// { emri, bajtet: Uint8Array, koha } | null
-export const ruajExcelin = (emri, bajtet) => veprim("readwrite", (s) => s.put({ emri, bajtet, koha: Date.now() }, "exceli")).catch(() => {});
-export const lexoExcelinERuajtur = () => veprim("readonly", (s) => s.get("exceli")).catch(() => null);
+// Excel-at e hapur: [{ emri, bajtet: Uint8Array, koha }] (versionet e vjetra ruanin një objekt të vetëm).
+export const ruajExcelat = (lista) => veprim("readwrite", (s) => s.put(lista, "exceli")).catch(() => {});
+export const lexoExcelatERuajtur = () =>
+  veprim("readonly", (s) => s.get("exceli"))
+    .then((r) => (Array.isArray(r) ? r : r?.bajtet ? [r] : []).filter((x) => x?.bajtet))
+    .catch(() => []);
 export const fshiExcelin = () => veprim("readwrite", (s) => s.delete("exceli")).catch(() => {});
 
 export const eshteCelular = () => typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;

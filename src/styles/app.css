@@ -145,6 +145,45 @@ body {
   min-width: 0;
 }
 
+/* Disa Excel-a të hapur: një kapsulë për secilin, me × për ta mbyllur. */
+.lb-excel-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.lb-excel-skedari {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 4px 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid var(--lb-kufi);
+}
+
+.lb-excel-hiq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.lb-excel-hiq:hover,
+.lb-excel-hiq:focus-visible {
+  opacity: 1;
+  background: var(--lb-kufi);
+}
+
 .lb-dizajnet {
   max-height: calc(100vh - 240px - var(--tb-h));
   min-height: 200px;

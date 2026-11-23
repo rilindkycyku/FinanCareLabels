@@ -176,21 +176,24 @@ export default function App() {
       e.preventDefault();
       thellesia = 0;
       setMbiDritare(false);
-      const skedari = e.dataTransfer.files?.[0];
+      const skedaret = Array.from(e.dataTransfer.files || []);
+      const skedari = skedaret[0];
       if (!skedari) return;
-      if (EXCEL_RE.test(skedari.name) && !eshteDesktop) {
+      // Disa Excel-a njëherësh: hapen të gjithë (fletët e secilit dalin veç e veç).
+      const excelat = skedaret.filter((f) => EXCEL_RE.test(f.name));
+      if (excelat.length && !eshteDesktop) {
         if (faqjaRef.current === "editori" && editoriNdryshuar.current) return mesazh("danger", "Ruani shabllonin në editor, pastaj lëshoni Excel-in.");
         setFaqja("printimi");
-        setExcelILeshuar({ skedari, id: Date.now() });
+        setExcelILeshuar({ skedaret: excelat, id: Date.now() });
         return undefined;
       }
-      if (EXCEL_RE.test(skedari.name)) {
-        const shtegu = eshteDesktop ? window.labels.shteguISkedarit(skedari) : "";
-        if (!shtegu) return mesazh("danger", "Skedari s'u hap - provoni me \"Hap Excel-in\".");
+      if (excelat.length) {
+        const shtigjet = excelat.map((f) => window.labels.shteguISkedarit(f)).filter(Boolean);
+        if (!shtigjet.length) return mesazh("danger", "Skedari s'u hap - provoni me \"Hap Excel-in\".");
         setFaqja((f) => (f === "editori" && editoriNdryshuar.current ? f : "printimi"));
         if (faqjaRef.current === "editori" && editoriNdryshuar.current) return mesazh("danger", "Ruani shabllonin në editor, pastaj lëshoni Excel-in.");
-        ndryshoCilesimet({ skedariExcel: shtegu });
-        mesazh("success", `U hap ${skedari.name}`);
+        ndryshoCilesimet({ skedaretExcel: shtigjet, skedariExcel: shtigjet[0] });
+        mesazh("success", excelat.length > 1 ? `U hapën ${excelat.length} Excel-a` : `U hap ${skedari.name}`);
       } else if (SHABLLON_RE.test(skedari.name)) {
         setFaqja("editori");
         setShablloniILeshuar({ skedari, id: Date.now() });

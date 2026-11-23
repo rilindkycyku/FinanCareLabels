@@ -52,6 +52,8 @@ export const fshijShabllonin = async (id) => {
 
 const CILESIMET_PARAZGJEDHUR = {
   skedariExcel: "",
+  // Disa Excel-a të hapur njëherësh (shtigjet); skedariExcel mban të parin.
+  skedaretExcel: [],
   emriBiznesit: "",
   stiliQmimit: "centet",
   shfaqBarkodin: true,
