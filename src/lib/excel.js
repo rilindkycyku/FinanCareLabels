@@ -200,7 +200,7 @@ const produktiNgaRreshti = (r, kolonat, nrRreshtit) => {
     kaZbritjeExcel: tekst(merr("kaZbritje")),
     // Sa etiketa të printohen (kolona opsionale "Kopje"); 1 kur mungon.
     kopje: Math.max(1, Math.min(99, Math.round(numer(merr("kopje")) || 1))),
-    unit: tekst(merr("njesia")) || (/\bkg\b/i.test(emri) ? "kg" : ""),
+    unit: tekst(merr("njesia")) || kgNgaEmri(emri),
     price: null,
     discount: null,
     qmimiPasZbritjes: null,
@@ -309,6 +309,10 @@ export const shablloniISugjeruar = (emriFletes) => {
   return "gati:raft";
 };
 
+// Njësia "kg" nga emri vetëm kur malli shitet me peshë ("Mollë KG", "Djathë kg");
+// "kg" pas një numri ("Sheqer 5 kg", "0,5kg") është madhësia e paketimit, që shitet me copë.
+const kgNgaEmri = (e) => (/(^|[^\d\s.,])\s*\bkg\b/i.test(String(e || "")) ? "kg" : "");
+
 /**
  * Produkti me ndryshimet e bëra në program (editori te tabela) - Excel-i nuk preket.
  * @param baza produkti nga Excel-i (ose bosh për një produkt të shtuar)
@@ -321,7 +325,7 @@ export const meNdryshime = (baza, n) => {
   const barcode = String(n.barcode ?? baza.barcode ?? "").trim();
   const qmimi = numer(n.qmimi ?? baza.price);
   const qmimiRi = numer(n.qmimiRi ?? baza.qmimiPasZbritjes);
-  const ngaEmri = (e) => (/\bkg\b/i.test(e) ? "kg" : "");
+  const ngaEmri = kgNgaEmri;
   const p = {
     ...baza,
     name,
