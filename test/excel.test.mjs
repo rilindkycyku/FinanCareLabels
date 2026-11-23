@@ -84,3 +84,10 @@ test("dy çmime të barabarta: pa zbritje; çmimi i blerjes s'bëhet zbritje", (
   p = lexoExcelin(excel([["Emertimi", "Cmimi blerjes", "Cmimi shitjes"], ["A", 1.2, 1.99]])).fletet[0].produktet[0];
   assert.deepEqual([p.price, p.qmimiPasZbritjes], [1.99, null]);
 });
+
+test("njësia nga emri: 'kg' pas numrit është paketimi (copë), 'kg' i vetëm është mall me peshë", () => {
+  const { produktet } = lexoExcelin(
+    excel([["Shifra", "Barcodi", "Emertimi", "Sasia", "Cmimi"], [1, 3903976460106, "Sheqer kristall premium 5 kg", 150, 3.84], [2, "", "Oriz 0,5kg", 1, 1], [3, "", "Mollë KG", 1, 0.8]])
+  ).fletet[0];
+  assert.deepEqual(produktet.map((p) => p.unit), ["", "", "kg"]);
+});
