@@ -145,6 +145,17 @@ body {
   min-width: 0;
 }
 
+/* "Printo bashkë me": fletët e tjera që printohen në të njëjtat faqe. */
+.lb-bashke {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--lb-kufi);
+}
+
+.lb-bashke .form-check-label {
+  overflow-wrap: anywhere;
+}
+
 /* Disa Excel-a të hapur: një kapsulë për secilin, me × për ta mbyllur. */
 .lb-excel-lista {
   display: flex;

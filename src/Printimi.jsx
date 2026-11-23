@@ -80,6 +80,19 @@ const teksti = (v) => (v == null ? "" : String(v));
 // Vlera bosh të qëndrueshme (jo objekt i ri në çdo render - përndryshe useMemo/useEffect rillogariten pa fund).
 const BOSH = Object.freeze({});
 const LISTE_BOSH = Object.freeze([]);
+
+// Produktet e një flete me ndryshimet e bëra këtu: rreshtat e Excel-it të fshirë ({ fshire: true }) s'shfaqen
+// (rikthehen me "Rikthe si në Excel"), të shtuarit dalin në fund.
+const ndertoProduktet = (fleta, ndryshimetEFletes, teShtuaratEFletes) => {
+  const ngaExceli = (fleta?.produktet || []).filter((p) => !ndryshimetEFletes[p.nr]?.fshire).map((p) => meNdryshime(p, ndryshimetEFletes[p.nr]));
+  const shtuar = teShtuaratEFletes.map((nr) => meNdryshime({ nr, iShtuar: true, name: "", code: "", barcode: "", price: null }, ndryshimetEFletes[nr] || {}));
+  return [...ngaExceli, ...shtuar];
+};
+// Kopjet: fusha "Kopje" e rreshtit, ndryshe kolona "Kopje" e Excel-it, ndryshe 1.
+const kopjaNga = (kopjetEFletes, p, maks) => {
+  const v = parseInt(kopjetEFletes[p.nr], 10);
+  return Number.isFinite(v) && v > 0 ? Math.min(v, maks) : p.kopje || 1;
+};
 const SET_BOSH = new Set();
 // Fleta pa Excel: produktet e shtuara direkt te programi (ruhen te produktet.json).
 const TE_MIAT_PRODUKTET = "Produktet e mia";
@@ -294,12 +307,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const teHequrat_ = teHequrat[fletaAktive] || SET_BOSH;
   const ndryshimetEFletes = ndryshimet[fletaAktive] || BOSH;
   const teShtuaratEFletes = teShtuarat[fletaAktive] || LISTE_BOSH;
-  const produktetEFletes = useMemo(() => {
-    // Rreshtat e Excel-it të fshirë këtu ({ fshire: true }) s'shfaqen; rikthehen me "Rikthe si në Excel".
-    const ngaExceli = (fleta?.produktet || []).filter((p) => !ndryshimetEFletes[p.nr]?.fshire).map((p) => meNdryshime(p, ndryshimetEFletes[p.nr]));
-    const shtuar = teShtuaratEFletes.map((nr) => meNdryshime({ nr, iShtuar: true, name: "", code: "", barcode: "", price: null }, ndryshimetEFletes[nr] || {}));
-    return [...ngaExceli, ...shtuar];
-  }, [fleta, ndryshimetEFletes, teShtuaratEFletes]);
+  const produktetEFletes = useMemo(() => ndertoProduktet(fleta, ndryshimetEFletes, teShtuaratEFletes), [fleta, ndryshimetEFletes, teShtuaratEFletes]);
   const numriINdryshimeve = Object.keys(ndryshimetEFletes).length + teShtuaratEFletes.length;
 
   const ndryshoFushen = (p, fusha, vlera) =>
@@ -428,14 +436,34 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
   const produktet = useMemo(() => produktetEFletes.filter((p) => !p.gabim && !teHequrat_.has(p.nr)), [produktetEFletes, teHequrat_]);
   // Kopjet: fusha "Kopje" e rreshtit, ndryshe kolona "Kopje" e Excel-it, ndryshe 1. Çdo kopje = një etiketë më shumë.
   const kopjetEFletes = kopjet[fletaAktive] || BOSH;
-  const kopjaE = useCallback(
-    (p) => {
-      const v = parseInt(kopjetEFletes[p.nr], 10);
-      return Number.isFinite(v) && v > 0 ? Math.min(v, MAKS_KOPJE) : p.kopje || 1;
-    },
-    [kopjetEFletes]
+  const kopjaE = useCallback((p) => kopjaNga(kopjetEFletes, p, MAKS_KOPJE), [kopjetEFletes]);
+  // "Printo bashkë": etiketat e fletëve të tjera të zgjedhura (secila me zgjedhjet, ndryshimet dhe kopjet e veta)
+  // dalin pas atyre të fletës aktive, me të njëjtin shabllon - në të njëjtat faqe, pa letër bosh mes tyre.
+  const [fletetBashke, setFletetBashke] = useState(LISTE_BOSH);
+  const fletetMeProdukte = useMemo(
+    () => fletet.filter((f) => f.produktet.some((p) => !p.gabim) || teShtuarat[f.emri]?.length),
+    [fletet, teShtuarat]
   );
-  const produktetPerPrintim = useMemo(() => produktet.flatMap((p) => Array(kopjaE(p)).fill(p)), [produktet, kopjaE]);
+  const fletetEBashkuara = useMemo(
+    () => fletetMeProdukte.filter((f) => f.emri !== fletaAktive && fletetBashke.includes(f.emri)),
+    [fletetMeProdukte, fletaAktive, fletetBashke]
+  );
+  const produktetEBashkuara = useMemo(
+    () =>
+      fletetEBashkuara.flatMap((f) => {
+        const hequr = teHequrat[f.emri] || SET_BOSH;
+        const kp = kopjet[f.emri] || BOSH;
+        return ndertoProduktet(f, ndryshimet[f.emri] || BOSH, teShtuarat[f.emri] || LISTE_BOSH)
+          .filter((p) => !p.gabim && !hequr.has(p.nr))
+          .flatMap((p) => Array(kopjaNga(kp, p, MAKS_KOPJE)).fill(p));
+      }),
+    [fletetEBashkuara, teHequrat, kopjet, ndryshimet, teShtuarat]
+  );
+  const ndryshoBashke = (emri, po) => setFletetBashke((l) => (po ? [...l.filter((x) => x !== emri), emri] : l.filter((x) => x !== emri)));
+  const produktetPerPrintim = useMemo(
+    () => [...produktet.flatMap((p) => Array(kopjaE(p)).fill(p)), ...produktetEBashkuara],
+    [produktet, kopjaE, produktetEBashkuara]
+  );
   const ndryshoKopjet = (nr, vlera) =>
     setKopjet((t) => ({
       ...t,
@@ -611,7 +639,7 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
 
   /* ---------- Flamujt ---------- */
 
-  const kodet = useMemo(() => [...new Set(produktetEFletes.map((p) => p.origin).filter(Boolean))].sort().join(","), [produktetEFletes]);
+  const kodet = useMemo(() => [...new Set([...produktetEFletes, ...produktetEBashkuara].map((p) => p.origin).filter(Boolean))].sort().join(","), [produktetEFletes, produktetEBashkuara]);
   useEffect(() => {
     if (!kodet) return undefined;
     let aktiv = true;
@@ -955,6 +983,31 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
               </button>
             ))}
           </div>
+          {fletetMeProdukte.some((f) => f.emri !== fletaAktive) && (
+            <div className="lb-bashke mb-3">
+              <div className="small fw-semibold mb-1">Printo bashkë me (në të njëjtat faqe, për të kursyer letër):</div>
+              <div className="d-flex flex-wrap gap-3">
+                {fletetMeProdukte
+                  .filter((f) => f.emri !== fletaAktive)
+                  .map((f) => (
+                    <Form.Check
+                      key={f.emri}
+                      type="checkbox"
+                      id={`bashke-${f.emri}`}
+                      className="small"
+                      label={f.emri}
+                      checked={fletetBashke.includes(f.emri)}
+                      onChange={(e) => ndryshoBashke(f.emri, e.target.checked)}
+                    />
+                  ))}
+              </div>
+              {fletetEBashkuara.length > 0 && (
+                <div className="text-white-50 small mt-1">
+                  +{produktetEBashkuara.length} etiketa nga {fletetEBashkuara.length === 1 ? "fleta tjetër" : `${fletetEBashkuara.length} fletë të tjera`} - dalin pas këtyre, me shabllonin e fletës "{fletaAktive}".
+                </div>
+              )}
+            </div>
+          )}
           {fleta && !fleta.eMia && (
             <div className={`ql-shenim ${fleta.titujt && fleta.titujt.menyra !== "permbajtja" ? "ql-shenim--info" : ""} d-flex justify-content-between align-items-center gap-2 mb-3`}>
               <span className="small">
@@ -1441,11 +1494,14 @@ export default function Printimi({ cilesimet, ndryshoCilesimet, mesazh, hapEdito
                     <div className="ql-titulli-seksionit">Përmbledhja</div>
                     <dl className="lb-permbledhja">
                       <dt>Fleta</dt>
-                      <dd>{fletaAktive}</dd>
+                      <dd>
+                        {fletaAktive}
+                        {fletetEBashkuara.length > 0 && <> + {fletetEBashkuara.map((f) => `"${f.emri}"`).join(", ")}</>}
+                      </dd>
                       <dt>Etiketa</dt>
                       <dd>
                         {produktetPerPrintim.length}
-                        {produktetPerPrintim.length !== produktet.length ? ` (${produktet.length} produkte, me kopjet)` : ""}
+                        {fletetEBashkuara.length === 0 && produktetPerPrintim.length !== produktet.length ? ` (${produktet.length} produkte, me kopjet)` : ""}
                       </dd>
                       <dt>Shablloni</dt>
                       <dd>{emriIShabllonit || "-"}</dd>

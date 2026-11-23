@@ -2,6 +2,13 @@
 // Versioni i ri shtohet në krye. build.ps1 e rrit versionin e patch-it në çdo ndërtim.
 export const NDRYSHIMET = [
   {
+    versioni: "1.0.6",
+    data: "2026-11-23",
+    pikat: [
+      ["E re", "\"Printo bashkë me\": te Produktet zgjidhni fletët e tjera (edhe nga Excel-at e tjerë) që të printohen në të njëjtat faqe me fletën aktive - etiketat e tyre zënë vendet bosh pas këtyre, pa filluar faqe të re. Kursen letër; secila fletë mban zgjedhjet, ndryshimet dhe kopjet e veta, me shabllonin e fletës aktive."],
+    ],
+  },
+  {
     versioni: "1.0.5",
     data: "2026-11-23",
     pikat: [
