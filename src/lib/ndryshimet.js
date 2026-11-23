@@ -2,6 +2,13 @@
 // Versioni i ri shtohet në krye. build.ps1 e rrit versionin e patch-it në çdo ndërtim.
 export const NDRYSHIMET = [
   {
+    versioni: "1.0.5",
+    data: "2026-11-23",
+    pikat: [
+      ["Rregullim", "Njësia \"/kg\" del vetëm te malli që shitet me peshë (p.sh. \"Mollë KG\"). Kur \"kg\" vjen pas një numri (p.sh. \"Sheqer 5 kg\", \"Oriz 0,5kg\"), ajo është madhësia e paketimit: çmimi del pa \"/kg\"."],
+    ],
+  },
+  {
     versioni: "1.0.4",
     data: "2026-11-22",
     pikat: [
