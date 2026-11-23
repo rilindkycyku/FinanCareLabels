@@ -178,7 +178,7 @@ export default function Cilesimet({
                     type="switch"
                     id="lb-perditesimet"
                     className="small mt-3"
-                    label="Kontrollo vetë për versione të reja (kur ka internet)"
+                    label="Përditësohu vetë: versioni i ri shkarkohet dhe instalohet kur mbyllet programi (kur ka internet)"
                     checked={kontrolloAuto}
                     onChange={(e) => ndryshoCilesimet({ kontrolloPerditesimet: e.target.checked })}
                   />

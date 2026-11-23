@@ -247,6 +247,29 @@ function menyraEInstalimit() {
   return { menyra, dosja }
 }
 let skedariIShkarkuar = ''
+let instalimiUNis = false
+
+// Ditari i përditësimeve (për të kuptuar pse një përditësim s'u instalua): %APPDATA%\FinanCareLabels\perditesimi.log
+const DITARI_I_PERDITESIMIT = path.join(DATA_DIR, 'perditesimi.log')
+const ditari = (rreshti) => {
+  try {
+    fs.appendFileSync(DITARI_I_PERDITESIMIT, `${new Date().toISOString()} [${app.getVersion()}] ${rreshti}\r\n`, 'utf8')
+  } catch {
+    /* s'ka rëndësi */
+  }
+}
+
+// Skedari ekziston dhe përputhet me madhësinë dhe SHA-256 të GitHub-it.
+async function iPlote(skedari) {
+  try {
+    if (!perditesimi?.sha256 || fs.statSync(skedari).size !== perditesimi.madhesia) return false
+    const hash = crypto.createHash('sha256')
+    await new Promise((ok, gabim) => fs.createReadStream(skedari).on('data', (c) => hash.update(c)).on('end', ok).on('error', gabim))
+    return hash.digest('hex') === perditesimi.sha256
+  } catch {
+    return false
+  }
+}
 
 const versioniNumra = (v) => String(v || '').replace(/^v/i, '').split(/[.-]/).map((x) => parseInt(x, 10) || 0)
 const eshteMeIRi = (a, b) => {
@@ -304,6 +327,16 @@ ipcMain.handle('perditesimi:shkarko', async (event) => {
     const dosja = path.join(app.getPath('temp'), 'FinanCareLabels-perditesimi')
     fs.mkdirSync(dosja, { recursive: true })
     destinacioni = path.join(dosja, `FinanCare Labels Setup ${perditesimi.versioni}.exe`)
+    // Instaluesit e versioneve të tjera (të shkarkuar, por të painstaluar) s'duhen më.
+    for (const emri of fs.readdirSync(dosja)) {
+      if (path.join(dosja, emri) !== destinacioni) fs.rm(path.join(dosja, emri), { force: true }, () => {})
+    }
+  }
+  // I shkarkuar më parë (p.sh. programi u mbyll para instalimit): s'shkarkohet sërish kur përputhet me GitHub-in.
+  if (await iPlote(destinacioni)) {
+    skedariIShkarkuar = destinacioni
+    ditari(`${perditesimi.versioni} gati nga shkarkimi i mëparshëm`)
+    return { gati: true, versioni: perditesimi.versioni }
   }
   const r = await net.fetch(perditesimi.url, { headers: { 'User-Agent': 'FinanCareLabels-Updater' } })
   if (!r.ok || !r.body) throw new Error(`Shkarkimi dështoi: ${r.status}`)
@@ -342,55 +375,78 @@ ipcMain.handle('perditesimi:shkarko', async (event) => {
     throw new Error('Skedari i shkarkuar s\'përputhet me versionin në GitHub (SHA-256).')
   }
   skedariIShkarkuar = destinacioni
+  ditari(`${perditesimi.versioni} u shkarkua`)
   return { gati: true, versioni: perditesimi.versioni }
 })
 
-ipcMain.handle('perditesimi:instalo', () => {
-  if (!skedariIShkarkuar || process.platform !== 'win32') return false
+// Nis instalimin e versionit të shkarkuar në një proces më vete (pret mbylljen e programit). "rihap" = programi hapet
+// përsëri pas përditësimit (butoni "Rinis"); pa të = programi u mbyll nga përdoruesi, përditësohet në heshtje.
+function nisPerditesimin(rihap) {
+  if (!skedariIShkarkuar || instalimiUNis || process.platform !== 'win32' || !fs.existsSync(skedariIShkarkuar)) return false
+  const thonjeza = (v) => `'${String(v).replace(/'/g, "''")}'`
+  const shenimi = `${thonjeza(DITARI_I_PERDITESIMIT)}`
+  let skripti
   if (I_INSTALUAR) {
-    // Instaluesi pret pak që programi të mbyllet, instalon në heshtje në dosjen nga u hap programi dhe e hap përsëri.
+    // Instaluesi pret pak që programi të mbyllet, instalon në heshtje në dosjen nga u hap programi (dhe e hap përsëri).
     // Pa /D instaluesi merr dosjen e regjistrit - kur dosja e programit është zhvendosur ose riemërtuar, instalonte
     // atje dhe programi që hapet mbetej i vjetër (mesazhi i përditësimit dilte sërish).
     const { menyra, dosja } = menyraEInstalimit()
-    const thonjeza = (v) => `'${String(v).replace(/'/g, "''")}'`
-    const ditari = path.join(DATA_DIR, 'perditesimi.log')
-    const skripti = [
+    skripti = [
       'Start-Sleep -Seconds 2',
       // /D duhet të jetë i fundit dhe pa thonjëza (rregull i NSIS-it).
-      `$argumentet = '${menyra} /S --updated --force-run /D=${dosja.replace(/'/g, "''")}'`,
+      `$argumentet = '${menyra} /S --updated${rihap ? ' --force-run' : ''} /D=${dosja.replace(/'/g, "''")}'`,
       // Instalimi për të gjithë përdoruesit kërkon leje administratori: Windows-i e pyet përdoruesin (UAC).
       `try { $p = Start-Process -FilePath ${thonjeza(skedariIShkarkuar)} -ArgumentList $argumentet${menyra === '/allusers' ? ' -Verb RunAs' : ''} -Wait -PassThru -ErrorAction Stop; $kodi = $p.ExitCode } catch { $kodi = "gabim: $($_.Exception.Message)" }`,
-      `Add-Content -LiteralPath ${thonjeza(ditari)} -Value "$(Get-Date -Format s) ${perditesimi?.versioni || ''} $argumentet -> $kodi" -Encoding UTF8`,
-      `Remove-Item -LiteralPath ${thonjeza(skedariIShkarkuar)} -Force -ErrorAction SilentlyContinue`
-    ].join('\n')
-    spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', Buffer.from(skripti, 'utf16le').toString('base64')], {
+      `Add-Content -LiteralPath ${shenimi} -Value "$(Get-Date -Format s) instaluesi ${perditesimi?.versioni || ''} $argumentet -> $kodi" -Encoding UTF8`,
+      // Instaluesi fshihet vetëm kur instalimi doli mirë - ndryshe provohet sërish në mbylljen e radhës pa shkarkim.
+      `if ($kodi -eq 0) { Remove-Item -LiteralPath ${thonjeza(skedariIShkarkuar)} -Force -ErrorAction SilentlyContinue }`
+    ]
+  } else if (EXE_PORTABEL_SKEDARI) {
+    skripti = [
+      `$exe = ${thonjeza(EXE_PORTABEL_SKEDARI)}`,
+      `$iRi = ${thonjeza(skedariIShkarkuar)}`,
+      '$uZevendesua = $false',
+      // Pret derisa exe-ja e vjetër të lirohet (programi u mbyll), deri 2 minuta.
+      'for ($i = 0; $i -lt 160; $i++) {',
+      '  Start-Sleep -Milliseconds 750',
+      '  try { Move-Item -LiteralPath $iRi -Destination $exe -Force -ErrorAction Stop; $uZevendesua = $true; break } catch {}',
+      '}',
+      `Add-Content -LiteralPath ${shenimi} -Value "$(Get-Date -Format s) portabli ${perditesimi?.versioni || ''} -> $uZevendesua" -Encoding UTF8`,
+      ...(rihap ? ['Start-Process -FilePath $exe'] : [])
+    ]
+  } else return false
+  const sistemi = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32')
+  const powershell = path.join(sistemi, 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  const komanda = Buffer.from(skripti.join('\n'), 'utf16le').toString('base64')
+  try {
+    // PowerShell-i i nisur direkt me "detached" (pa konsol) del me kod 0 PA E EKZEKUTUAR skriptin (Windows PowerShell
+    // 5.1) - prandaj përditësimi s'instalohej kurrë pas "Rinis dhe përditëso". Pa "detached" ekzekutohet, por Node e
+    // mbyll bashkë me programin (job object). "cmd /c start" i jep konsolën e vet (të fshehur) dhe s'mbyllet me programin.
+    const p = spawn(path.join(sistemi, 'cmd.exe'), ['/d', '/c', 'start', '""', '/min', powershell, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', komanda], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true
-    }).unref()
-    setTimeout(() => app.quit(), 200)
-    return true
+    })
+    p.on('error', (err) => ditari(`powershell s'u nis: ${err?.message || err}`))
+    p.unref()
+  } catch (err) {
+    ditari(`powershell s'u nis: ${err?.message || err}`)
+    return false
   }
-  if (!EXE_PORTABEL_SKEDARI) return false
-  const thonjeza = (v) => `'${String(v).replace(/'/g, "''")}'`
-  const skripti = [
-    `$exe = ${thonjeza(EXE_PORTABEL_SKEDARI)}`,
-    `$iRi = ${thonjeza(skedariIShkarkuar)}`,
-    // Pret derisa exe-ja e vjetër të lirohet (programi u mbyll), deri 2 minuta.
-    'for ($i = 0; $i -lt 160; $i++) {',
-    '  Start-Sleep -Milliseconds 750',
-    '  try { Move-Item -LiteralPath $iRi -Destination $exe -Force -ErrorAction Stop; break } catch {}',
-    '}',
-    'Start-Process -FilePath $exe'
-  ].join('\n')
-  const komanda = Buffer.from(skripti, 'utf16le').toString('base64')
-  spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-EncodedCommand', komanda], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true
-  }).unref()
+  instalimiUNis = true
+  ditari(`instalimi i ${perditesimi?.versioni || ''} u nis (${rihap ? 'rinisja' : 'në mbyllje'})`)
+  return true
+}
+
+ipcMain.handle('perditesimi:instalo', () => {
+  if (!nisPerditesimin(true)) return false
   setTimeout(() => app.quit(), 200)
   return true
+})
+
+// Versioni i shkarkuar instalohet vetë kur përdoruesi e mbyll programin (pa klikuar "Rinis").
+app.on('will-quit', () => {
+  if (skedariIShkarkuar && !instalimiUNis) nisPerditesimin(false)
 })
 
 /* ---------- Dritarja ---------- */

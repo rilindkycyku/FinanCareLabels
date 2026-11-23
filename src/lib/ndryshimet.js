@@ -2,6 +2,15 @@
 // Versioni i ri shtohet në krye. build.ps1 e rrit versionin e patch-it në çdo ndërtim.
 export const NDRYSHIMET = [
   {
+    versioni: "1.0.7",
+    data: "2026-11-23",
+    pikat: [
+      ["E re", "Përditësimi tani bëhet vetë: versioni i ri shkarkohet në sfond dhe instalohet kur ta mbyllni programin. Nëse doni ta keni menjëherë, klikoni \"Përditëso tani\" te njoftimi lart. Një version i shkarkuar më parë s'shkarkohet sërish."],
+      ["Rregullim", "Versioni i ri instalohet vërtet pas \"Përditëso tani\" - më parë programi mbyllej, por versioni i ri s'instalohej dhe njoftimi dilte sërish."],
+      ["Rregullim", "\"Çka ka të re?\" te njoftimi i versionit të ri tregon vetëm listën e të rejave, si këtu - pa udhëzimet e shkarkimit dhe pa shenjat ** e `."],
+    ],
+  },
+  {
     versioni: "1.0.6",
     data: "2026-11-23",
     pikat: [
@@ -96,6 +105,24 @@ export const krahasoVersionet = (a, b) => {
   const y = numrat(b);
   for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
   return 0;
+};
+
+// Shënimet e release-it në GitHub (scripts/shenimet-e-versionit.mjs) → pikat [lloji, teksti] për "Çka ka të re".
+// Merret vetëm seksioni "### Çka ka të re" (jo udhëzimet e shkarkimit/instalimit), pa shenjat e Markdown-it.
+export const pikatNgaShenimet = (shenimet) => {
+  const rreshtat = String(shenimet || "").split(/\r?\n/);
+  const fillimi = rreshtat.findIndex((r) => /^#+\s*Çka ka të re/i.test(r.trim()));
+  const pjesa = fillimi >= 0 ? rreshtat.slice(fillimi + 1) : rreshtat;
+  const pastro = (t) => t.replace(/\*\*|__|`/g, "").trim();
+  const pikat = [];
+  for (const r of pjesa) {
+    if (fillimi >= 0 && /^#+\s/.test(r.trim())) break;
+    const m = /^\s*[-*]\s+(.*)$/.exec(r);
+    if (!m) continue;
+    const lloji = /^\*\*([^*:]+):?\*\*:?\s*(.*)$/.exec(m[1].trim());
+    pikat.push(lloji ? [pastro(lloji[1]), pastro(lloji[2])] : ["E re", pastro(m[1])]);
+  }
+  return pikat;
 };
 
 // Versionet pas "ngaVersioni" deri te "deriVersioni" (përfshirë); pa "ngaVersioni" - vetëm i fundit.

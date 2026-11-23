@@ -9,7 +9,7 @@ import ShiritiITitullit from "./components/ShiritiITitullit";
 const Editori = lazy(() => import("./Editori"));
 const Udhezuesi = lazy(() => import("./Udhezuesi"));
 import Cilesimet from "./components/Cilesimet";
-import { NDRYSHIMET, krahasoVersionet, ndryshimetMes } from "./lib/ndryshimet";
+import { NDRYSHIMET, krahasoVersionet, ndryshimetMes, pikatNgaShenimet } from "./lib/ndryshimet";
 import { eshteCelular } from "./lib/shfletuesi";
 import { eshteDesktop, lexoCilesimet, ruajCilesimet } from "./lib/ruajtja";
 
@@ -105,6 +105,9 @@ export default function App() {
 
   /* ---------- Përditësimi automatik (GitHub Releases) ---------- */
   const apiP = eshteDesktop ? window.labels.perditesimi : null;
+  // Versioni i ri shkarkohet vetë në sfond; instalohet kur mbyllet programi (ose me "Rinis tani").
+  const shkarkoRef = useRef(null);
+  const shkarkuarRef = useRef(""); // versioni që po shkarkohet / u shkarkua
   const kontrollo = useCallback(
     async (meDore = false) => {
       if (!apiP) return;
@@ -113,6 +116,10 @@ export default function App() {
         const r = await apiP.kontrollo();
         if (r.iRi) {
           setPerditesimi((p) => (p && p.versioni === r.versioni ? p : { versioni: r.versioni, shenimet: r.shenimet, madhesia: r.madhesia, vetvetiu: r.vetvetiu, gjendja: "gati" }));
+          if (r.vetvetiu && shkarkuarRef.current !== r.versioni) {
+            shkarkuarRef.current = r.versioni;
+            shkarkoRef.current?.();
+          }
           if (meDore) setKontrolli(`Versioni ${r.versioni} është gati - shihni njoftimin lart.`);
         } else if (meDore) setKontrolli(`Keni versionin më të ri (${r.aktual}).`);
       } catch (err) {
@@ -139,9 +146,11 @@ export default function App() {
       if (r?.hapurFaqja) setPerditesimi(null);
       else setPerditesimi((p) => ({ ...p, gjendja: "shkarkuar" }));
     } catch (err) {
+      shkarkuarRef.current = ""; // kontrolli i radhës provon sërish
       setPerditesimi((p) => ({ ...p, gjendja: "gabim", gabimi: err?.message || String(err) }));
     }
   };
+  shkarkoRef.current = shkarko;
   const instalo = async () => {
     if (faqja === "editori" && editoriNdryshuar.current) {
       mesazh("danger", "Ruani shabllonin në editor para përditësimit.");
@@ -303,11 +312,11 @@ export default function App() {
           {perditesimi.gjendja === "shkarkuar" && (
             <>
               <span>
-                Versioni <b>{perditesimi.versioni}</b> u shkarkua. Programi mbyllet, përditësohet dhe hapet vetë (të dhënat mbeten).
+                Versioni <b>{perditesimi.versioni}</b> është gati: instalohet vetë kur ta mbyllni programin (të dhënat mbeten).
               </span>
               <Button size="sm" className="btn-save" onClick={instalo}>
                 <FontAwesomeIcon icon={faArrowsRotate} className="me-2" />
-                Rinis dhe përditëso
+                Përditëso tani
               </Button>
             </>
           )}
@@ -319,8 +328,8 @@ export default function App() {
               </Button>
             </>
           )}
-          {perditesimi.shenimet && perditesimi.gjendja === "gati" && (
-            <button type="button" className="btn btn-link btn-sm p-0 text-info" onClick={() => setNdryshimet([{ versioni: perditesimi.versioni, shenimetGithub: perditesimi.shenimet }])}>
+          {perditesimi.shenimet && perditesimi.gjendja !== "gabim" && pikatNgaShenimet(perditesimi.shenimet).length > 0 && (
+            <button type="button" className="btn btn-link btn-sm p-0 text-info" onClick={() => setNdryshimet([{ versioni: perditesimi.versioni, pikat: pikatNgaShenimet(perditesimi.shenimet) }])}>
               Çka ka të re?
             </button>
           )}
@@ -387,22 +396,16 @@ export default function App() {
                 Versioni {v.versioni}
                 {v.data && <span className="text-white-50 fw-normal ms-2 small">{v.data}</span>}
               </h6>
-              {v.shenimetGithub ? (
-                <div style={{ whiteSpace: "pre-wrap" }} className="small">
-                  {v.shenimetGithub}
-                </div>
-              ) : (
-                <ul className="mb-0">
-                  {v.pikat.map(([lloji, teksti], i) => (
-                    <li key={i}>
-                      <Badge bg={lloji === "Rregullim" ? "secondary" : "success"} className="me-2">
-                        {lloji}
-                      </Badge>
-                      {teksti}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ul className="mb-0">
+                {v.pikat.map(([lloji, teksti], i) => (
+                  <li key={i}>
+                    <Badge bg={lloji === "Rregullim" ? "secondary" : "success"} className="me-2">
+                      {lloji}
+                    </Badge>
+                    {teksti}
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </Modal.Body>
