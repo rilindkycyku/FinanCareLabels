@@ -93,11 +93,12 @@ ipcMain.handle('te-dhenat:hap-dosjen', () => shell.openPath(DATA_DIR))
 
 ipcMain.handle('excel:zgjidh', async () => {
   const r = await dialog.showOpenDialog(mainWindow, {
-    title: 'Zgjidh Excel-in me çmimet',
+    title: 'Zgjidh Excel-in me çmimet (edhe disa njëherësh)',
     filters: [{ name: 'Excel / CSV', extensions: ['xlsx', 'xlsm', 'xls', 'ods', 'csv'] }],
-    properties: ['openFile']
+    properties: ['openFile', 'multiSelections']
   })
-  return r.canceled ? null : r.filePaths[0]
+  // Lista e shtigjeve (disa Excel-a njëherësh); null kur anulohet.
+  return r.canceled || !r.filePaths.length ? null : r.filePaths
 })
 
 // Bajtet e skedarit; null nëse s'ekziston. Excel-i i hapur lejon leximin (ndarje leximi në Windows).

@@ -5,6 +5,7 @@ export const NDRYSHIMET = [
     versioni: "1.0.5",
     data: "2026-11-23",
     pikat: [
+      ["E re", "Disa Excel-a njëherësh: te \"Hap Excel-in\" zgjidhni disa skedarë (ose lëshojini bashkë në dritare), dhe me \"Shto Excel\" shtoni të tjerë pa i mbyllur të hapurit. Fletët e secilit dalin veç e veç me emrin e skedarit para (p.sh. \"Book1 · Sheet1\"); çdo Excel mbyllet me ×."],
       ["Rregullim", "Njësia \"/kg\" del vetëm te malli që shitet me peshë (p.sh. \"Mollë KG\"). Kur \"kg\" vjen pas një numri (p.sh. \"Sheqer 5 kg\", \"Oriz 0,5kg\"), ajo është madhësia e paketimit: çmimi del pa \"/kg\"."],
     ],
   },
